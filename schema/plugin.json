@@ -1,0 +1,8 @@
+{
+  "jupyter.lab.shortcuts": [],
+  "title": "jupyterlab-minio",
+  "description": "jupyterlab-minio settings.",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": false
+}
