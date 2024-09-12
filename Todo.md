@@ -1,6 +1,6 @@
-# Todo list 
+# Todo list
 
-Dreams 
+Dreams
 
 ## 1.x
 
@@ -9,4 +9,4 @@ Dreams
 
 ## 2.x
 
-- [ ] merge to Jupyterlab 4.x 
+- [ ] merge to Jupyterlab 4.x

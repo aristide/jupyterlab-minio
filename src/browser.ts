@@ -1,18 +1,18 @@
-import { PanelLayout, Widget } from "@lumino/widgets";
+import { PanelLayout, Widget } from '@lumino/widgets';
 
-import { FileBrowser } from "@jupyterlab/filebrowser";
+import { FileBrowser } from '@jupyterlab/filebrowser';
 
-import { S3Drive } from "./contents";
+import { S3Drive } from './contents';
 
-import { IDocumentManager } from "@jupyterlab/docmanager";
+import { IDocumentManager } from '@jupyterlab/docmanager';
 
-import { h, VirtualDOM } from "@lumino/virtualdom";
+import { h, VirtualDOM } from '@lumino/virtualdom';
 
-import { ServerConnection } from "@jupyterlab/services";
+import { ServerConnection } from '@jupyterlab/services';
 
-import { URLExt } from "@jupyterlab/coreutils";
+import { URLExt } from '@jupyterlab/coreutils';
 
-import { showErrorMessage } from "@jupyterlab/apputils";
+import { showErrorMessage } from '@jupyterlab/apputils';
 
 import { ToolbarButton, showDialog, Dialog } from '@jupyterlab/apputils';
 
@@ -28,17 +28,16 @@ let s3AuthenticationForm: any | undefined | null;
  * Widget for hosting the S3 filebrowser.
  */
 export class S3FileBrowser extends Widget {
-
   constructor(browser: FileBrowser, drive: S3Drive, manager: IDocumentManager) {
     super();
-    this.addClass("jp-S3Browser");
+    this.addClass('jp-S3Browser');
     this.layout = new PanelLayout();
 
     // edit Config Button
     const editConfigButton = new ToolbarButton({
       icon: settingsIcon,
-      tooltip: "Reset Your Credentials",
-      onClick: async() => {
+      tooltip: 'Reset Your Credentials',
+      onClick: async () => {
         const result = await showDialog({
           title: 'Confirmation Required',
           body: 'You have requested to reset your credentials. Before proceeding, we would like to confirm if you intended to make this request.',
@@ -50,31 +49,28 @@ export class S3FileBrowser extends Widget {
 
         if (result.button.accept) {
           console.log('Configuration confirmed.');
-          Private.deleteConfigFile().then(({ success, message })=> {
-            if(success){
+          Private.deleteConfigFile().then(({ success, message }) => {
+            if (success) {
               (this.layout as PanelLayout).removeWidget(browser);
               (this.layout as PanelLayout).addWidget(s3AuthenticationForm);
-            }else{
-              void showErrorMessage(
-                "Credentials Reset Error",
-                Error(message)
-              );
+            } else {
+              void showErrorMessage('Credentials Reset Error', Error(message));
             }
           });
-        }  
+        }
       }
     });
 
-    // refresh content button 
+    // refresh content button
     const refreshButton = new ToolbarButton({
       icon: refreshIcon,
-      tooltip: "Refresh",
+      tooltip: 'Refresh',
       onClick: () => {
-          browser.model.refresh();
+        browser.model.refresh();
       }
-    });    
+    });
 
-    // // updaload  button 
+    // // updaload  button
     // const uploadButton = new ToolbarButton({
     //   icon: fileUploadIcon,
     //   tooltip: "Upload",
@@ -92,13 +88,12 @@ export class S3FileBrowser extends Widget {
     // browser.toolbar.insertItem(11, 'filebrowser:open-url', uploadButton);
     browser.toolbar.insertItem(12, 'setting', editConfigButton);
 
-    
     /**
      * Function to handle setting credentials that are read
      * from the s3AuthenticationForm widget.
      */
     const s3AuthenticationFormSubmit = () => {
-      const form = document.querySelector("#minio-form") as HTMLFormElement;
+      const form = document.querySelector('#minio-form') as HTMLFormElement;
       const formData = new FormData(form);
       const formDataJSON: any = {};
       (formData as any).forEach((value: string, key: string) => {
@@ -106,27 +101,27 @@ export class S3FileBrowser extends Widget {
       });
       const settings = ServerConnection.makeSettings();
       ServerConnection.makeRequest(
-        URLExt.join(settings.baseUrl, "jupyterlab-minio/auth"),
+        URLExt.join(settings.baseUrl, 'jupyterlab-minio/auth'),
         {
-          method: "POST",
-          body: JSON.stringify(formDataJSON),
+          method: 'POST',
+          body: JSON.stringify(formDataJSON)
         },
         settings
-      ).then((response) => {
-        response.json().then((data) => {
+      ).then(response => {
+        response.json().then(data => {
           if (data.success) {
             (this.layout as PanelLayout).removeWidget(s3AuthenticationForm);
             (this.layout as PanelLayout).addWidget(browser);
             browser.model.refresh();
           } else {
             let errorMessage = data.message;
-            if (errorMessage.includes("InvalidAccessKeyId")) {
-              errorMessage = "The access key ID you entered was invalid.";
-            } else if (errorMessage.includes("SignatureDoesNotMatch")) {
-              errorMessage = "The secret access key you entered was invalid";
+            if (errorMessage.includes('InvalidAccessKeyId')) {
+              errorMessage = 'The access key ID you entered was invalid.';
+            } else if (errorMessage.includes('SignatureDoesNotMatch')) {
+              errorMessage = 'The secret access key you entered was invalid';
             }
             void showErrorMessage(
-              "S3 Authentication Error",
+              'S3 Authentication Error',
               Error(errorMessage)
             );
           }
@@ -139,10 +134,9 @@ export class S3FileBrowser extends Widget {
      * Render the browser if they don't,
      * render the auth widget if they do.
      */
-    Private.checkIfAuthenicated().then((authenticated) => {
-      
+    Private.checkIfAuthenicated().then(authenticated => {
       s3AuthenticationForm = new Widget({
-        node: Private.createS3AuthenticationForm(s3AuthenticationFormSubmit),
+        node: Private.createS3AuthenticationForm(s3AuthenticationFormSubmit)
       });
 
       if (authenticated) {
@@ -164,44 +158,42 @@ namespace Private {
    * @param onSubmit A function to be called when the
    * submit button is clicked.
    */
-  export function createS3AuthenticationForm(onSubmit: any): HTMLElement {
+  export function createS3AuthenticationForm(onSubmit: void): HTMLElement {
     return VirtualDOM.realize(
       h.div(
-        { className: "minio-form" },
-        h.h4("Minio Object Storage Browser"),
-        h.div(
-          "This extension allows you to browse Minio"
-        ),
+        { className: 'minio-form' },
+        h.h4('Minio Object Storage Browser'),
+        h.div('This extension allows you to browse Minio'),
         h.br(),
         h.form(
-          { id: "minio-form", method: "post" },
+          { id: 'minio-form', method: 'post' },
           h.p(
-            h.label({}, "Endpoint URL"),
+            h.label({}, 'Endpoint URL'),
             h.br(),
-            h.input({ type: "url", name: "url" })
+            h.input({ type: 'url', name: 'url' })
           ),
           h.br(),
           h.p(
-            h.label({}, "Access Key ID"),
+            h.label({}, 'Access Key ID'),
             h.br(),
-            h.input({ type: "text", name: "accessKey" })
+            h.input({ type: 'text', name: 'accessKey' })
           ),
           h.br(),
           h.p(
-            h.label({}, "Secret Access Key"),
+            h.label({}, 'Secret Access Key'),
             h.br(),
-            h.input({ type: "password", name: "secretKey" })
-          ),
+            h.input({ type: 'password', name: 'secretKey' })
+          )
         ),
         h.br(),
         h.p(
-          { className: "s3-connect" },
+          { className: 's3-connect' },
           h.button(
             {
               onclick: onSubmit,
-              className: "jp-mod-accept jp-mod-styled",
+              className: 'jp-mod-accept jp-mod-styled'
             },
-            "Connect"
+            'Connect'
           )
         )
       )
@@ -216,13 +208,13 @@ namespace Private {
     return new Promise((resolve, reject) => {
       const settings = ServerConnection.makeSettings();
       ServerConnection.makeRequest(
-        URLExt.join(settings.baseUrl, "jupyterlab-minio/auth"),
+        URLExt.join(settings.baseUrl, 'jupyterlab-minio/auth'),
         {
-          method: "GET",
+          method: 'GET'
         },
         settings
-      ).then((response) => {
-        response.json().then((res) => {
+      ).then(response => {
+        response.json().then(res => {
           resolve(res.authenticated);
         });
       });
@@ -230,20 +222,23 @@ namespace Private {
   }
 
   /**
-   * Return true if the config file as been deleted 
+   * Return true if the config file as been deleted
    */
-  export function deleteConfigFile():Promise<{ success: boolean; message: string }>{
+  export function deleteConfigFile(): Promise<{
+    success: boolean;
+    message: string;
+  }> {
     return new Promise((resolve, reject) => {
       const settings = ServerConnection.makeSettings();
       ServerConnection.makeRequest(
-        URLExt.join(settings.baseUrl, "jupyterlab-minio/auth"),
+        URLExt.join(settings.baseUrl, 'jupyterlab-minio/auth'),
         {
-          method: "DELETE",
+          method: 'DELETE'
         },
         settings
-      ).then((response) => {
-        response.json().then((res) => {
-          resolve({success: res.success, message: res.message || ""});
+      ).then(response => {
+        response.json().then(res => {
+          resolve({ success: res.success, message: res.message || '' });
         });
       });
     });

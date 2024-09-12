@@ -4,40 +4,25 @@ import {
   JupyterFrontEndPlugin
 } from '@jupyterlab/application';
 
-// import {
-  // Clipboard,
-  // createToolbarFactory,
-  // ICommandPalette,
-  // InputDialog,
-  // IToolbarWidgetRegistry,
-  // MainAreaWidget,
-  // setToolbar,
-  // showErrorMessage,
-  // WidgetTracker
-// } from '@jupyterlab/apputils';
-
-
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
-import { IDocumentManager } from "@jupyterlab/docmanager";
+import { IDocumentManager } from '@jupyterlab/docmanager';
 
-import { IFileBrowserFactory } from "@jupyterlab/filebrowser";
+import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 
-// import { ITranslator } from '@jupyterlab/translation';
+import { S3Drive } from './contents';
 
-import { S3Drive } from "./contents";
-
-import { S3FileBrowser } from "./browser";
+import { S3FileBrowser } from './browser';
 
 /**
  * S3 filebrowser plugin state namespace.
  */
-const NAMESPACE = "minio-filebrowser";
+const NAMESPACE = 'minio-filebrowser';
 
 /**
  * The ID for the plugin.
  */
-const PLUGIN_ID = "jupyterlab-minio:plugin";
+const PLUGIN_ID = 'jupyterlab-minio:plugin';
 
 /**
  * Initialization data for the jupyterlab-minio extension.
@@ -49,9 +34,7 @@ const fileBrowserPlugin: JupyterFrontEndPlugin<void> = {
     IDocumentManager,
     IFileBrowserFactory,
     ILayoutRestorer,
-    ISettingRegistry,
-    // ITranslator,
-    // ICommandPalette
+    ISettingRegistry
   ],
   activate: activateFileBrowser
 };
@@ -63,7 +46,7 @@ function activateFileBrowser(
   manager: IDocumentManager,
   factory: IFileBrowserFactory,
   restorer: ILayoutRestorer,
-  settingRegistry: ISettingRegistry,
+  settingRegistry: ISettingRegistry
   // translator: ITranslator,
   // commandPalette: ICommandPalette | null
 ): void {
@@ -74,22 +57,21 @@ function activateFileBrowser(
   const browser = factory.createFileBrowser(NAMESPACE, {
     driveName: drive.name,
     state: null,
-    refreshInterval: 300000,
+    refreshInterval: 300000
   });
 
   const s3Browser = new S3FileBrowser(browser, drive, manager);
 
-  s3Browser.title.iconClass = "jp-minio-icon jp-SideBar-tabIcon";
-  s3Browser.title.caption = "Minio Browser";
+  s3Browser.title.iconClass = 'jp-minio-icon jp-SideBar-tabIcon';
+  s3Browser.title.caption = 'Minio Browser';
 
-  s3Browser.id = "minio-file-browser";
+  s3Browser.id = 'minio-file-browser';
 
   // Add the file browser widget to the application restorer.
   restorer.add(s3Browser, NAMESPACE);
-  app.shell.add(s3Browser, "left", { rank: 100 });
+  app.shell.add(s3Browser, 'left', { rank: 100 });
 
   return;
 }
-
 
 export default fileBrowserPlugin;

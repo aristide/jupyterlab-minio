@@ -1,98 +1,97 @@
-[data-jp-theme-light="true"] .jp-minio-icon {
-    background-image: url(m-light.svg);
-  }
-  
-  [data-jp-theme-light="false"] .jp-minio-icon {
-    background-image: url(m-dark.svg);
-  }
-  
-  .jp-SideBar .p-TabBar-content .p-TabBar-tab .jp-minio-icon {
-    background-size: 90%;
-  }
-  
-  [data-jp-theme-light="true"]
-    #minio-filebrowser
-    .jp-FileBrowser-crumbs
-    .jp-BreadCrumbs-item:first-child {
-    background-image: url(bucket-light.svg);
-  }
-  
-  [data-jp-theme-light="false"]
-    #minio-filebrowser
-    .jp-FileBrowser-crumbs
-    .jp-BreadCrumbs-item:first-child {
-    background-image: url(bucket-dark.svg);
-  }
-  
-  [data-jp-theme-light="true"]
-    #minio-filebrowser.root
-    .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
-    background-image: url(bucket-light.svg);
-  }
-  
-  [data-jp-theme-light="false"]
-    #minio-filebrowser.root
-    .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
-    background-image: url(bucket-dark.svg);
-  }
-  
-  #minio-filebrowser.root .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
-    background-size: 65%;
-  }
-  
-  #minio-filebrowser .jp-FileBrowser-crumbs .jp-BreadCrumbs-item:first-child {
-    background-size: 65%;
-  }
-  
-  .s3-error {
-    padding: 30px;
-    border: 3px solid red;
-    font-size: 1.3em;
-  }
-  
-  .minio-form {
-    padding: 25px;
-    text-align: center;
-  }
-  
-  .jp-S3Browser {
-    background-color: var(--jp-layout-color1);
-    height: 100%;
-  }
-  
-  .jp-S3Browser .jp-FileBrowser {
-    flex-grow: 1;
-    height: 100%;
-  }
-  
-  .jp-S3Browser .jp-ToolbarButton.jp-Toolbar-item.jp-S3-toolbar-item {
-    display: block;
-  }
-  
-  [data-jp-theme-light="false"] .minio-form {
-    color: white;
-    font-size: 1.1em;
-  }
-  
-  [data-jp-theme-light="true"] .minio-form {
-    color: black;
-    font-size: 1.1em;
-  }
-  
-  .s3-connect {
-    text-align: center;
-    font-size: 0.8em;
-  }
-  
-  #minio-filebrowser.loading > div > ul > li {
-    display: none;
-  }
-  
-  /*
+[data-jp-theme-light="'true'"] .jp-minio-icon {
+  background-image: url('m-light.svg');
+}
+
+[data-jp-theme-light="'false'"] .jp-minio-icon {
+  background-image: url('m-dark.svg');
+}
+
+.jp-SideBar .p-TabBar-content .p-TabBar-tab .jp-minio-icon {
+  background-size: 90%;
+}
+
+[data-jp-theme-light="'true'"]
+  #minio-filebrowser
+  .jp-FileBrowser-crumbs
+  .jp-BreadCrumbs-item:first-child {
+  background-image: url('bucket-light.svg');
+}
+
+[data-jp-theme-light="'false'"]
+  #minio-filebrowser
+  .jp-FileBrowser-crumbs
+  .jp-BreadCrumbs-item:first-child {
+  background-image: url('bucket-dark.svg');
+}
+
+[data-jp-theme-light="'true'"]
+  #minio-filebrowser.root
+  .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
+  background-image: url('bucket-light.svg');
+}
+
+[data-jp-theme-light="'false'"]
+  #minio-filebrowser.root
+  .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
+  background-image: url('bucket-dark.svg');
+}
+
+#minio-filebrowser.root .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
+  background-size: 65%;
+}
+
+#minio-filebrowser .jp-FileBrowser-crumbs .jp-BreadCrumbs-item:first-child {
+  background-size: 65%;
+}
+
+.s3-error {
+  padding: 30px;
+  border: 3px solid red;
+  font-size: 1.3em;
+}
+
+.minio-form {
+  padding: 25px;
+  text-align: center;
+}
+
+.jp-S3Browser {
+  background-color: var(--jp-layout-color1);
+  height: 100%;
+}
+
+.jp-S3Browser .jp-FileBrowser {
+  flex-grow: 1;
+  height: 100%;
+}
+
+.jp-S3Browser .jp-ToolbarButton.jp-Toolbar-item.jp-S3-toolbar-item {
+  display: block;
+}
+
+[data-jp-theme-light="'false'"] .minio-form {
+  color: white;
+  font-size: 1.1em;
+}
+
+[data-jp-theme-light="'true'"] .minio-form {
+  color: black;
+  font-size: 1.1em;
+}
+
+.s3-connect {
+  text-align: center;
+  font-size: 0.8em;
+}
+
+#minio-filebrowser.loading > div > ul > li {
+  display: none;
+}
+
+/*
   last modified isn't yet implemented, so hide it
   */
-  #minio-filebrowser .jp-DirListing-itemModified,
-  #minio-filebrowser .jp-id-modified {
-    display: none;
-  }
-  
+#minio-filebrowser .jp-DirListing-itemModified,
+#minio-filebrowser .jp-id-modified {
+  display: none;
+}
