@@ -1,6 +1,8 @@
 import base64
 import json
+import os
 import logging
+import colorlog
 from pathlib import Path
 
 import boto3
@@ -9,6 +11,34 @@ import tornado
 from botocore.exceptions import NoCredentialsError
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
+from json.decoder import JSONDecodeError
+from traitlets.config import Config
+from .config import JupyterLabS3
+
+
+########################### Custom logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+class CustomFormatter(colorlog.ColoredFormatter):
+    def format(self, record):
+        # Add the class name to the record dynamically
+        record.classname = record.args.get('classname', record.name) if isinstance(record.args, dict) else 'NoClass'
+        return super().format(record)
+    
+handler = colorlog.StreamHandler()
+handler.setFormatter(CustomFormatter(
+    '%(log_color)s[%(levelname).1s %(asctime)s %(classname)s %(funcName)s] %(message)s',
+    log_colors={
+        'DEBUG': 'cyan',
+        'INFO': 'green',
+        'WARNING': 'yellow',
+        'ERROR': 'red',
+        'CRITICAL': 'bold_red'
+    }
+))
+
+logger.addHandler(handler)
 
 
 ########################### Custom exceptions
@@ -22,6 +52,13 @@ class S3ResourceNotFoundException(Exception):
 
 
 ########################### Custom methods
+def _to_dict(configurable):
+    """
+    Turn Configurable to dict
+    """
+    return {name: getattr(configurable, name) for name in configurable.trait_names()}
+
+
 def create_s3fs(config):
 
     if config.url and config.accessKey and config.secretKey:
@@ -31,7 +68,6 @@ def create_s3fs(config):
             secret=config.secretKey,
             client_kwargs={"endpoint_url": config.url},
         )
-
     else:
         return s3fs.S3FileSystem()
 
@@ -51,25 +87,74 @@ def create_s3_resource(config):
         return boto3.resource("s3")
 
 
-def save_s3_credentials(config):
+def load_json(filcontent):
+    """
+    Handle json encoding error while loading json file content
+    """
+    json_data = {}
+    try:
+        json_data = json.load(filcontent)
+    except JSONDecodeError:
+        pass
+    return json_data
+
+
+def minio_dict_to_config(configs):
+    lakeStorageDict = configs.get("aliases", {}).get("lakeStorage", {})
+    config_dict = {
+        "JupyterLabS3": {
+            "url": lakeStorageDict.get("url"),
+            "accessKey": lakeStorageDict.get("accessKey"),
+            "secretKey": lakeStorageDict.get("secretKey")
+        }
+    }
+    config = Config(config_dict)
+    return JupyterLabS3(config = config)
+
+
+def get_minio_credentials():
+    """
+    Load Minio credential from configuration file
+    """
     credentials_file = Path("{}/.mc/config.json".format(Path.home()))
-    credientials = {
+    if credentials_file.exists():
+        with credentials_file.open() as credentials:
+            configs = load_json(credentials)
+            config = minio_dict_to_config(configs)
+            return config
+    return None
+
+
+def save_s3_credentials(config):
+    """
+    Create minio config file https://docs.safespring.com/storage/minio-client/ 
+    """
+    configPath = Path("{}/.mc/config.json".format(Path.home()))
+    os.makedirs(os.path.dirname(configPath), exist_ok=True)
+    credentials = {
+        "version": 10,
         "aliases": {
             "lakeStorage": {
-                "url": "{}".format(config.url),
-			    "accessKey": "{}".format(config.accessKey),
-			    "secretKey": "{}".format(config.secretKey),
+                "url": "{}".format(config.url or ""),
+			    "accessKey": "{}".format(config.accessKey or ""),
+			    "secretKey": "{}".format(config.secretKey or ""),
 			    "api": "S3v4",
 			    "path": "auto"
             }
         }
     }
-    json.dump(credientials, open(credentials_file, 'wb'))
+    # update environment variable with the new credentials
+    os.environ["MINIO_ENDPOINT"] = config.url or ""
+    os.environ["MINIO_ACCESS_KEY"] = config.accessKey or ""
+    os.environ["MINIO_SECRET_KEY"] = config.secretKey or ""
+
+    with open(configPath, 'w') as configFile:
+        json.dump(credentials, configFile, indent=4,  sort_keys=True)
 
 
 def _test_minio_role_access(config):
     """
-    Checks if we have access to AWS S3 through role-based access
+    Checks if we have access to minio bucket through role-based access
     """
     test = boto3.resource("s3",
         aws_access_key_id=config.accessKey,
@@ -84,31 +169,29 @@ def _test_minio_role_access(config):
     return result
 
 
-def has_minio_s3_role_access():
+def has_minio_role_access():
     """
-    Returns true if the user has access to an aws S3 bucket
+    Returns true if the user has access to an minio bucket
     """
 
-    # avoid making requests to AWS if the user's ~/.mc/config.json file has credentials for a different provider,
+    # avoid making requests to Minio if the user's ~/.mc/config.json file has credentials for a different provider,
     # e.g. https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-aws-cli#aws-cli-config
-    credentials_file = Path("{}/.mc/config.json".format(Path.home()))
-    if credentials_file.exists():
-        with credentials_file.open() as credentials:
-            configs = json.load(f)
-            if not configs.get("aliases", {}).get("lakeStorage", {}).get("accessKey"):
-                return False
-
+    
+    config = get_minio_credentials()
+    if not config or not config.accessKey or not str(config.accessKey).strip():
+        return False
+    
     try:
-        _test_minio_role_access(configs.get("aliases").get("lakeStorage"))
+        _test_minio_role_access(config)
         return True
     except NoCredentialsError:
         return False
     except Exception as e:
-        logging.error(e)
+        logger.error(e)
         return False
 
 
-def test_s3_credentials(url, accessKey, secretKey):
+def test_minio_credentials(url, accessKey, secretKey):
     """
     Checks if we're able to list buckets with these credentials.
     If not, it throws an exception.
@@ -120,7 +203,7 @@ def test_s3_credentials(url, accessKey, secretKey):
         endpoint_url=url,
     )
     all_buckets = test.buckets.all()
-    logging.debug(
+    logger.debug(
         [
             {"name": bucket.name + "/", "path": bucket.name + "/", "type": "directory"}
             for bucket in all_buckets
@@ -136,16 +219,24 @@ def convertS3FStoJupyterFormat(result):
     }
 
 
-
 ########################### Custom class
-class AuthRouteHandler(APIHandler):  # pylint: disable=abstract-method
+class CustomAPIHandler(APIHandler):
+    """
+    Read Minio credential from config
+    """
+    
+    @property
+    def config(self):
+        credentials = get_minio_credentials()
+        if credentials:
+            return credentials
+        return self.settings["config"]
+        
+
+class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
     """
     handle api requests to change auth info
     """
-
-    @property
-    def config(self):
-        return self.settings["config"]
 
     @tornado.web.authenticated
     def get(self, path=""):
@@ -154,7 +245,7 @@ class AuthRouteHandler(APIHandler):  # pylint: disable=abstract-method
         against an s3 instance.
         """
         authenticated = False
-        if has_minio_s3_role_access():
+        if has_minio_role_access():
             authenticated = True
 
         if not authenticated:
@@ -162,12 +253,12 @@ class AuthRouteHandler(APIHandler):  # pylint: disable=abstract-method
             try:
                 config = self.config
                 if config.url and config.accessKey and config.secretKey:
-                    test_s3_credentials(
+                    test_minio_credentials(
                         config.url,
                         config.accessKey,
                         config.secretKey,
                     )
-                    logging.debug("...successfully authenticated")
+                    logger.debug("...successfully authenticated")
 
                     # If no exceptions were encountered during testS3Credentials,
                     # then assume we're authenticated
@@ -177,8 +268,8 @@ class AuthRouteHandler(APIHandler):  # pylint: disable=abstract-method
                 # If an exception was encountered,
                 # assume that we're not yet authenticated
                 # or invalid credentials were provided
-                logging.debug("...failed to authenticate")
-                logging.debug(err)
+                logger.debug("...failed to authenticate")
+                logger.debug(err)
 
         self.finish(json.dumps({"authenticated": authenticated}))
 
@@ -194,28 +285,51 @@ class AuthRouteHandler(APIHandler):  # pylint: disable=abstract-method
             accessKey = req["accessKey"]
             secretKey = req["secretKey"]
 
-            test_s3_credentials(url, accessKey, secretKey)
-        
+            test_minio_credentials(url, accessKey, secretKey)
+
             self.config.url = url
             self.config.accessKey = accessKey
             self.config.secretKey = secretKey
             # save the config file
-            save_s3_credentials(config)
+            save_s3_credentials(self.config)
 
             self.finish(json.dumps({"success": True}))
         except Exception as err:
-            logging.info("unable to authenticate using credentials")
-            self.finish(json.dumps({"success": False, "message": str(err)}))
+            logger.error("unable to authenticate using credentials {}".format(str(self.request.body)))
+            self.finish(json.dumps({"success": False, "message": "{}".format(str(err))}))
+
+    @tornado.web.authenticated
+    def delete(self, path=""):
+        """
+        Remove the config file
+        """
+        try:
+
+            # delete minio environment variable
+            del os.environ["MINIO_ENDPOINT"]
+            del os.environ["MINIO_ACCESS_KEY"]
+            del os.environ["MINIO_SECRET_KEY"]
+
+            # reset the config fields
+            self.config.url = ""
+            self.config.accessKey = ""
+            self.config.secretKey = ""
+
+        
+            configPath = Path("{}/.mc/config.json".format(Path.home()))
+            if configPath.exists():
+                os.remove(configPath)
+
+            self.finish(json.dumps({"success": True}))
+        except Exception as err:
+            logger.error("unable reconfigure using credentials")
+            self.finish(json.dumps({"success": False, "message": "{} ".format(str(err))}))
 
 
-class S3PathRouteHandler(APIHandler):
+class S3PathRouteHandler(CustomAPIHandler):
     """
     Handles requests for getting S3 objects
     """
-
-    @property
-    def config(self):
-        return self.settings["config"]
 
     s3fs = None
     s3_resource = None
@@ -227,7 +341,6 @@ class S3PathRouteHandler(APIHandler):
         and directories/prefixes based on the path.
         """
         path = path[1:]
-        #  logging.info("GET {}".format(path))
 
         try:
             if not self.s3fs:
@@ -256,7 +369,7 @@ class S3PathRouteHandler(APIHandler):
                 "message": "The requested resource could not be found.",
             }
         except Exception as e:
-            logging.error("Exception encountered during GET {}: {}".format(path, e))
+            logger.error("Exception encountered during GET {}: {} {}".format(path, e, str(_to_dict(self.config))))
             result = {"error": 500, "message": str(e)}
 
         self.finish(json.dumps(result))
@@ -282,7 +395,7 @@ class S3PathRouteHandler(APIHandler):
                 if "/" not in source:
                     path = path + "/.keep"
 
-                #  logging.info("copying {} -> {}".format(source, path))
+                #  logger.info("copying {} -> {}".format(source, path))
                 self.s3fs.cp(source, path, recursive=True)
                 # why read again?
                 with self.s3fs.open(path, "rb") as f:
@@ -294,7 +407,7 @@ class S3PathRouteHandler(APIHandler):
             elif "X-Custom-S3-Move-Src" in self.request.headers:
                 source = self.request.headers["X-Custom-S3-Move-Src"]
 
-                #  logging.info("moving {} -> {}".format(source, path))
+                #  logger.info("moving {} -> {}".format(source, path))
                 self.s3fs.move(source, path, recursive=True)
                 # why read again?
                 with self.s3fs.open(path, "rb") as f:
@@ -308,7 +421,7 @@ class S3PathRouteHandler(APIHandler):
                 if not path[-1] == "/":
                     path = path + "/"
 
-                #  logging.info("creating new dir: {}".format(path))
+                #  logger.info("creating new dir: {}".format(path))
                 self.s3fs.mkdir(path)
                 self.s3fs.touch(path + ".keep")
             elif self.request.body:
@@ -323,13 +436,13 @@ class S3PathRouteHandler(APIHandler):
                     }
 
         except S3ResourceNotFoundException as e:
-            #  logging.info(e)
+            #  logger.info(e)
             result = {
                 "error": 404,
                 "message": "The requested resource could not be found.",
             }
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             result = {"error": 500, "message": str(e)}
 
         self.finish(json.dumps(result))
@@ -341,7 +454,7 @@ class S3PathRouteHandler(APIHandler):
         and directories/prefixes based on the path.
         """
         path = path[1:]
-        #  logging.info("DELETE: {}".format(path))
+        #  logger.info("DELETE: {}".format(path))
 
         result = {}
 
@@ -378,31 +491,20 @@ class S3PathRouteHandler(APIHandler):
                 self.s3fs.rm(path)
 
         except S3ResourceNotFoundException as e:
-            logging.error(e)
+            logger.error(e)
             result = {
                 "error": 404,
                 "message": "The requested resource could not be found.",
             }
         except DirectoryNotEmptyException as e:
-            #  logging.info("Attempted to delete non-empty directory")
+            #  logger.info("Attempted to delete non-empty directory")
             result = {"error": 400, "error": "DIR_NOT_EMPTY"}
         except Exception as e:
-            logging.error("error while deleting")
-            logging.error(e)
+            logger.error("error while deleting")
+            logger.error(e)
             result = {"error": 500, "message": str(e)}
 
         self.finish(json.dumps(result))
-
-
-class HelloRouteHandler(APIHandler):
-    # The following decorator should be present on all verb methods (head, get, post,
-    # patch, put, delete, options) to ensure only authorized user can request the
-    # Jupyter server
-    @tornado.web.authenticated
-    def get(self):
-        self.finish(json.dumps({
-            "data": "This is /jupyterlab-minio/hello endpoint!"
-        }))
 
 
 ########################### Setup lab handler
@@ -411,7 +513,6 @@ def setup_handlers(web_app):
 
     base_url = web_app.settings["base_url"]
     handlers = [
-        (url_path_join(base_url, "jupyterlab-minio", "get_example"), HelloRouteHandler),
         (url_path_join(base_url, "jupyterlab-minio", "auth(.*)"), AuthRouteHandler),
         (url_path_join(base_url, "jupyterlab-minio", "files(.*)"), S3PathRouteHandler),
     ]

@@ -6,6 +6,12 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "jlpm watch",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "jlpm watch"
+        },
+        {
             "name": "jlab backend",
             "type": "python",
             "request": "launch",
@@ -13,25 +19,9 @@
                 "--notebook-dir=notebooks",
                 "--no-browser",
                 "--NotebookApp.token=''",
-                "--port=9999"
-            ],
-            "justMyCode": false,
-            "module": "jupyterlab.labapp",
-            "presentation": {
-                "hidden": true
-            },
-            
-        },
-        {
-            "name": "jlab backend (watch)",
-            "type": "python",
-            "request": "launch",
-            "args": [
-                "--watch",
-                "--notebook-dir=notebooks",
-                "--no-browser",
-                "--NotebookApp.token=''",
-                "--port=9999"
+                "--port=9999",
+                "--ip=0.0.0.0",
+                "--log-level=ERROR"
             ],
             "justMyCode": false,
             "module": "jupyterlab.labapp",
@@ -45,7 +35,7 @@
             "type": "chrome",
             "request": "launch",
             "timeout": 180000,
-            "url": "http://localhost:9999",
+            "url": "http://localhost:9999/lab",
             // set webroot to the parent dir of your project's top level package.json
             "webRoot": "${workspaceFolder}",
             "presentation": {
@@ -65,7 +55,8 @@
         {
             "name": "jlab debug (watch)",
             "configurations": [
-                "jlab backend (watch)",
+                "jlpm watch",
+                "jlab backend",
                 "jlab frontend"
             ]
         }

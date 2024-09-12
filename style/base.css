@@ -1,12 +1,12 @@
-[data-jp-theme-light="true"] .jp-S3-icon {
-    background-image: url(bucket-light.svg);
+[data-jp-theme-light="true"] .jp-minio-icon {
+    background-image: url(m-light.svg);
   }
   
-  [data-jp-theme-light="false"] .jp-S3-icon {
-    background-image: url(bucket-dark.svg);
+  [data-jp-theme-light="false"] .jp-minio-icon {
+    background-image: url(m-dark.svg);
   }
   
-  .jp-SideBar .p-TabBar-content .p-TabBar-tab .jp-S3-icon {
+  .jp-SideBar .p-TabBar-content .p-TabBar-tab .jp-minio-icon {
     background-size: 90%;
   }
   
@@ -50,7 +50,7 @@
     font-size: 1.3em;
   }
   
-  .s3form {
+  .minio-form {
     padding: 25px;
     text-align: center;
   }
@@ -69,12 +69,12 @@
     display: block;
   }
   
-  [data-jp-theme-light="false"] .s3form {
+  [data-jp-theme-light="false"] .minio-form {
     color: white;
     font-size: 1.1em;
   }
   
-  [data-jp-theme-light="true"] .s3form {
+  [data-jp-theme-light="true"] .minio-form {
     color: black;
     font-size: 1.1em;
   }

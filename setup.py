@@ -28,6 +28,7 @@ labext_name = pkg_json["name"]
 data_files_spec = [
     ("share/jupyter/labextensions/%s" % labext_name, str(lab_path.relative_to(HERE)), "**"),
     ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
+    ("share/jupyter/labextensions/%s" % labext_name, str("."), "package.json"),
     ("etc/jupyter/jupyter_server_config.d",
      "jupyter-config/server-config", "jupyterlab-minio.json"),
     # For backward compatibility with notebook server
@@ -63,6 +64,7 @@ setup_args = dict(
         "s3fs>=2021.10.1",
         "singleton-decorator",
         "jupyterlab>=3.1.0,<4.0.0",
+        "colorlog"
     ],
     extras_require={
         "test": [
