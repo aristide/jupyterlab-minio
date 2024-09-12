@@ -85,6 +85,7 @@ setup_args = dict(
     packages=setuptools.find_packages(),
     install_requires=[
         "jupyter_server",
+        "jupyterlab-pygments==0.2.2",
         "notebook",
         "boto3",
         "s3fs>=2021.10.1",
