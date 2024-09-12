@@ -4,8 +4,8 @@ on:
 
 jobs:
 
-  build:
-    name: Build
+  build-release:
+    name: Build-release
     runs-on: ubuntu-22.04
 
     steps:
@@ -58,7 +58,7 @@ jobs:
 
   publish-python:
     name: Publish python package
-    needs: build
+    needs: build-release
     runs-on: ubuntu-latest
     permissions:
       id-token: write
