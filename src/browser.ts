@@ -158,7 +158,8 @@ namespace Private {
    * @param onSubmit A function to be called when the
    * submit button is clicked.
    */
-  export function createS3AuthenticationForm(onSubmit: void): HTMLElement {
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  export function createS3AuthenticationForm(onSubmit: any): HTMLElement {
     return VirtualDOM.realize(
       h.div(
         { className: 'minio-form' },
