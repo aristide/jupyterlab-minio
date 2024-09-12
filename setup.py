@@ -4,7 +4,13 @@ jupyterlab-minio setup
 import json
 import sys
 from pathlib import Path
-
+from jupyter_packaging import (
+    create_cmdclass,
+    install_npm,
+    ensure_targets,
+    combine_commands,
+    skip_if_exists
+)
 import setuptools
 
 HERE = Path(__file__).parent.resolve()
@@ -14,8 +20,9 @@ pkg_json = json.loads((HERE / "package.json").read_bytes())
 
 # The name of the project
 name = "jupyterlab-minio"
+labext_name = pkg_json["name"]
 
-lab_path = (HERE / pkg_json["jupyterlab"]["outputDir"])
+lab_path = (HERE / labext_name / "labextension")
 
 # Representative files that should exist after a successful build
 ensured_targets = [
@@ -23,12 +30,11 @@ ensured_targets = [
     str(lab_path / "static/style.js")
 ]
 
-labext_name = pkg_json["name"]
 
 data_files_spec = [
-    ("share/jupyter/labextensions/%s" % labext_name, str(lab_path.relative_to(HERE)), "**"),
-    ("share/jupyter/labextensions/%s" % labext_name, str("."), "install.json"),
-    ("share/jupyter/labextensions/%s" % labext_name, str("."), "package.json"),
+    ("share/jupyter/labextensions/%s" % labext_name, str(lab_path), "**"),
+    ("share/jupyter/labextensions/%s" % labext_name, str(HERE), "install.json"),
+    ("share/jupyter/labextensions/%s" % labext_name, str(HERE), "package.json"),
     ("etc/jupyter/jupyter_server_config.d",
      "jupyter-config/server-config", "jupyterlab-minio.json"),
     # For backward compatibility with notebook server
@@ -36,18 +42,37 @@ data_files_spec = [
      "jupyter-config/nb-config", "jupyterlab-minio.json"),
 ]
 
+package_data_spec = {
+    name: ["*"],
+}
+
+cmdclass = create_cmdclass("jsdeps",
+    package_data_spec=package_data_spec,
+    data_files_spec=data_files_spec
+)
+
+# Js Command
+jstargets = [
+    str(lab_path / "package.json"),
+]
+
+js_command = combine_commands(
+    install_npm(HERE, build_cmd="build:prod", npm=["jlpm"]),
+    ensure_targets(jstargets),
+)
+
+is_repo = (HERE / ".git").exists()
+if is_repo:
+    cmdclass["jsdeps"] = js_command
+else:
+    cmdclass["jsdeps"] = skip_if_exists(jstargets, js_command)
+
 long_description = (HERE / "README.md").read_text()
 
-version = (
-    pkg_json["version"]
-    .replace("-alpha.", "a")
-    .replace("-beta.", "b")
-    .replace("-rc.", "rc")
-) 
 
 setup_args = dict(
     name=name,
-    version=version,
+    version=pkg_json["version"],
     url=pkg_json["homepage"],
     author=pkg_json["author"]["name"],
     author_email=pkg_json["author"]["email"],
@@ -56,6 +81,7 @@ setup_args = dict(
     license_file="LICENSE",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    cmdclass=cmdclass,
     packages=setuptools.find_packages(),
     install_requires=[
         "jupyter_server",
@@ -97,24 +123,6 @@ setup_args = dict(
         "Framework :: Jupyter :: JupyterLab :: Extensions :: Prebuilt",
     ],
 )
-
-try:
-    from jupyter_packaging import (
-        wrap_installers,
-        npm_builder,
-        get_data_files
-    )
-    post_develop = npm_builder(
-        build_cmd="install:extension", source_dir="src", build_dir=lab_path
-    )
-    setup_args["cmdclass"] = wrap_installers(post_develop=post_develop, ensured_targets=ensured_targets)
-    setup_args["data_files"] = get_data_files(data_files_spec)
-except ImportError as e:
-    import logging
-    logging.basicConfig(format="%(levelname)s: %(message)s")
-    logging.warning("Build tool `jupyter-packaging` is missing. Install it with pip or conda.")
-    if not ("--name" in sys.argv or "--version" in sys.argv):
-        raise e
 
 if __name__ == "__main__":
     setuptools.setup(**setup_args)

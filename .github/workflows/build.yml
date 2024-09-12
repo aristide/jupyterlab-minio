@@ -36,7 +36,7 @@ jobs:
       run: |
         set -eux
 
-        python -m pip install .
+        python -m pip install .[test]
 
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie ".*jupyterlab-minio.*ok"
