@@ -1,6 +1,7 @@
 # jupyterlab-minio
 
-[![Github Actions Status](https://github.com/aristide/jupyterlab-minio/workflows/Build/badge.svg)](https://github.com/aristide/jupyterlab-minio/actions/workflows/build.yml)
+[![Github Actions Status](https://github.com/aristide/jupyterlab-minio/workflows/Build/badge.svg)](https://github.com/aristide/jupyterlab-minio/actions/workflows/build.yml)[![PyPI version](https://badge.fury.io/py/jupyterlab-minio.svg)](https://badge.fury.io/py/jupyterlab-minio)
+
 JupyterLab extension for browsing Minio object storage
 
 This extension is composed of a Python package named `jupyterlab-minio`
