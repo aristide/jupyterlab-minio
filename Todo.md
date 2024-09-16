@@ -9,4 +9,5 @@ Dreams
 
 ## 2.x
 
+- [ ] display versions and tags with actions 
 - [ ] merge to Jupyterlab 4.x

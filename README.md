@@ -4,46 +4,41 @@
 JupyterLab extension for browsing Minio object storage
 
 This extension is composed of a Python package named `jupyterlab-minio`
-for the server extension and a NPM package named `jupyterlab-minio`
-for the frontend extension.
 
-## Requirements
+## Installation
 
-- JupyterLab >= 3.0
-
-## Install
-
-To install the extension, execute:
+Works on JupyterLab 3 only
 
 ```bash
 pip install jupyterlab-minio
 ```
 
-## Uninstall
+You may also need to run:
 
-To remove the extension, execute:
-
-```bash
-pip uninstall jupyterlab-minio
+```
+jupyter serverextension enable --py jupyterlab_s3_browser
 ```
 
-## Troubleshoot
+to make sure the serverextension is enabled and then restart (stop and start) JupyterLab.
 
-If you are seeing the frontend extension, but it is not working, check
-that the server extension is enabled:
+## Usage
 
-```bash
-jupyter server extension list
-```
+#### Configuration
 
-If the server extension is installed and enabled, but you are not seeing
-the frontend extension, check the frontend extension is installed:
+If you have a ~/.mc/config.json file available then no futher configuration is necessary.
+
+If you wish to configure through environment variables, you can do so using environment variables, for example:
 
 ```bash
-jupyter labextension list
+export MINIO_ENDPOINT="https://s3.us.cloud-object-storage.appdomain.cloud"
+export MINIO_ACCESS_KEY="my-access-key-id"
+export MINIO_SECRET_KEY="secret"
+
 ```
 
-## Contributing
+You can also start without any configuration and fill in your endpoint/credentials though the form when prompted.
+
+## Development
 
 ### Development install
 
@@ -137,6 +132,4 @@ More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jup
 
 More information are provided within the [ui-tests](./ui-tests/README.md) README.
 
-### Packaging the extension
 
-See [RELEASE](RELEASE.md)
