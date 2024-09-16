@@ -16,7 +16,7 @@ pip install jupyterlab-minio
 You may also need to run:
 
 ```
-jupyter serverextension enable --py jupyterlab-minio
+jupyter server extension enable jupyterlab-minio
 ```
 
 to make sure the serverextension is enabled and then restart (stop and start) JupyterLab.
