@@ -125,3 +125,6 @@ dmypy.json
 notebooks/*
 !notebooks/.keep
 .secrets
+
+# others
+.Trash*

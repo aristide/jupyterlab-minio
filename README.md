@@ -5,6 +5,8 @@ JupyterLab extension for browsing Minio object storage
 
 This extension is composed of a Python package named `jupyterlab-minio`
 
+![screenshot](minio-browser-screenshot.gif)
+
 ## Installation
 
 Works on JupyterLab 3 only
@@ -131,5 +133,3 @@ This extension uses [Playwright](https://playwright.dev/docs/intro/) for the int
 More precisely, the JupyterLab helper [Galata](https://github.com/jupyterlab/jupyterlab/tree/master/galata) is used to handle testing the extension in JupyterLab.
 
 More information are provided within the [ui-tests](./ui-tests/README.md) README.
-
-
