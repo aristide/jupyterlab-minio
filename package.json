@@ -1,6 +1,6 @@
 {
   "name": "jupyterlab-minio",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "JupyterLab extension for browsing Minio object storage",
   "keywords": [
     "jupyter",

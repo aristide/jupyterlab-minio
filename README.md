@@ -8,7 +8,7 @@ JupyterLab extension for browsing Minio object storage
 
 This extension is composed of a Python package named `jupyterlab-minio`
 
-![screenshot](minio-browser-screenshot.gif)
+![Jupyter Minio](https://raw.githubusercontent.com/aristide/jupyterlab-minio/master/minio-browser-screenshot.gif)
 
 ## Installation
 
