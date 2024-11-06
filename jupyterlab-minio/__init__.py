@@ -1,7 +1,7 @@
 from ._version import __version__
 
 from .handlers import setup_handlers
-from .config import JupyterLabS3
+from .utils import JupyterLabS3
 
 def _jupyter_labextension_paths():
     return [{
@@ -24,8 +24,8 @@ def _load_jupyter_server_extension(server_app):
     server_app: jupyterlab.labapp.LabApp
         JupyterLab application instance
     """
-    config = JupyterLabS3(config=server_app.config)
-    server_app.web_app.settings["config"] = config
+    minio_config = JupyterLabS3(config=server_app.config)
+    server_app.web_app.settings["minio_config"] = minio_config
     setup_handlers(server_app.web_app)
     name = "jupyterlab-minio"
     server_app.log.info(f"Registered {name} server extension")

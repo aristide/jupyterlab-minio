@@ -7,7 +7,8 @@
       "extensions": [
         "ms-python.python",
         "ms-vscode.live-server",
-        "visualstudioexptteam.vscodeintellicode"
+        "visualstudioexptteam.vscodeintellicode",
+        "esbenp.prettier-vscode"
       ],
       "settings": {
         "terminal.integrated.profiles.linux": {

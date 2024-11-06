@@ -2,6 +2,11 @@ FROM debian:bookworm-slim AS jupyter
 
 LABEL author=aristide
 
+SHELL [ "/bin/bash", "-c" ]
+ENV SHELL=/bin/bash
+# Replace shell with bash so we can source files
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
+
 # Set debconf to run non-interactively
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
@@ -117,10 +122,11 @@ RUN wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | 
     && echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm' >> ~/.bashrc \
     && echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion' >> ~/.bashrc
 
+# Install mc client
 RUN mkdir -p /home/jupyter/.local/bin \
-    && curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/nektos/act/master/install.sh | bash \
-    && mv ./bin/act  /home/jupyter/.local/bin \
-    && rm -rf ./bin
+    && curl https://dl.min.io/client/mc/release/linux-amd64/mc -o /home/jupyter/.local/bin/mc \
+    && chmod +x /home/jupyter/.local/bin/mc
+
 
 EXPOSE 8888 9999
 

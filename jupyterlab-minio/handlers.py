@@ -11,9 +11,7 @@ import tornado
 from botocore.exceptions import NoCredentialsError
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
-from json.decoder import JSONDecodeError
-from traitlets.config import Config
-from .config import JupyterLabS3
+from .utils import EnvironmentManager, MinIOConfigHelper
 
 
 ########################### Custom logging
@@ -40,11 +38,15 @@ handler.setFormatter(CustomFormatter(
 
 logger.addHandler(handler)
 
+########################### Custom helpers
+
+minio_config_helper = MinIOConfigHelper()
+# bash_helper = BashrcEnvManager()
+env_manager = EnvironmentManager()
 
 ########################### Custom exceptions
 class DirectoryNotEmptyException(Exception):
     """Raise for attempted deletions of non-empty directories"""
-
     pass
 
 class S3ResourceNotFoundException(Exception):
@@ -52,12 +54,6 @@ class S3ResourceNotFoundException(Exception):
 
 
 ########################### Custom methods
-def _to_dict(configurable):
-    """
-    Turn Configurable to dict
-    """
-    return {name: getattr(configurable, name) for name in configurable.trait_names()}
-
 
 def create_s3fs(config):
 
@@ -87,69 +83,13 @@ def create_s3_resource(config):
         return boto3.resource("s3")
 
 
-def load_json(filcontent):
-    """
-    Handle json encoding error while loading json file content
-    """
-    json_data = {}
-    try:
-        json_data = json.load(filcontent)
-    except JSONDecodeError:
-        pass
-    return json_data
-
-
-def minio_dict_to_config(configs):
-    lakeStorageDict = configs.get("aliases", {}).get("lakeStorage", {})
-    config_dict = {
-        "JupyterLabS3": {
-            "url": lakeStorageDict.get("url"),
-            "accessKey": lakeStorageDict.get("accessKey"),
-            "secretKey": lakeStorageDict.get("secretKey")
-        }
-    }
-    config = Config(config_dict)
-    return JupyterLabS3(config = config)
-
-
 def get_minio_credentials():
     """
     Load Minio credential from configuration file
     """
-    credentials_file = Path("{}/.mc/config.json".format(Path.home()))
-    if credentials_file.exists():
-        with credentials_file.open() as credentials:
-            configs = load_json(credentials)
-            config = minio_dict_to_config(configs)
-            return config
+    if minio_config_helper.exist:
+        return minio_config_helper.config
     return None
-
-
-def save_s3_credentials(config):
-    """
-    Create minio config file https://docs.safespring.com/storage/minio-client/ 
-    """
-    configPath = Path("{}/.mc/config.json".format(Path.home()))
-    os.makedirs(os.path.dirname(configPath), exist_ok=True)
-    credentials = {
-        "version": 10,
-        "aliases": {
-            "lakeStorage": {
-                "url": "{}".format(config.url or ""),
-			    "accessKey": "{}".format(config.accessKey or ""),
-			    "secretKey": "{}".format(config.secretKey or ""),
-			    "api": "S3v4",
-			    "path": "auto"
-            }
-        }
-    }
-    # update environment variable with the new credentials
-    os.environ["MINIO_ENDPOINT"] = config.url or ""
-    os.environ["MINIO_ACCESS_KEY"] = config.accessKey or ""
-    os.environ["MINIO_SECRET_KEY"] = config.secretKey or ""
-
-    with open(configPath, 'w') as configFile:
-        json.dump(credentials, configFile, indent=4,  sort_keys=True)
 
 
 def _test_minio_role_access(config):
@@ -178,7 +118,7 @@ def has_minio_role_access():
     # e.g. https://cloud.ibm.com/docs/cloud-object-storage?topic=cloud-object-storage-aws-cli#aws-cli-config
     
     config = get_minio_credentials()
-    if not config or not config.accessKey or not str(config.accessKey).strip():
+    if not config:
         return False
     
     try:
@@ -230,8 +170,8 @@ class CustomAPIHandler(APIHandler):
         credentials = get_minio_credentials()
         if credentials:
             return credentials
-        return self.settings["config"]
-        
+        return self.settings["minio_config"]
+         
 
 class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
     """
@@ -244,6 +184,7 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
         Checks if the user is already authenticated
         against an s3 instance.
         """
+        
         authenticated = False
         if has_minio_role_access():
             authenticated = True
@@ -271,6 +212,19 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
                 logger.debug("...failed to authenticate")
                 logger.debug(err)
 
+        os.environ["MYVAR"] = self.config.url
+        
+        if authenticated:
+            # update environment variable with the new credentials
+            env_manager.update_env_var("MINIO_ENDPOINT", self.config.url)
+            env_manager.update_env_var("MINIO_ACCESS_KEY", self.config.accessKey)
+            env_manager.update_env_var("MINIO_SECRET_KEY", self.config.secretKey)
+        else:
+            # delete minio environment variable
+            env_manager.remove_env_var("MINIO_ENDPOINT")
+            env_manager.remove_env_var("MINIO_ACCESS_KEY")
+            env_manager.remove_env_var("MINIO_SECRET_KEY")
+        
         self.finish(json.dumps({"authenticated": authenticated}))
 
     @tornado.web.authenticated
@@ -290,9 +244,14 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
             self.config.url = url
             self.config.accessKey = accessKey
             self.config.secretKey = secretKey
-            # save the config file
-            save_s3_credentials(self.config)
-
+            
+            # update minio config gile
+            minio_config_helper.update_alias(url, accessKey, secretKey)
+            # update environment variable with the new credentials
+            env_manager.update_env_var("MINIO_ENDPOINT", self.config.url)
+            env_manager.update_env_var("MINIO_ACCESS_KEY", self.config.accessKey)
+            env_manager.update_env_var("MINIO_SECRET_KEY", self.config.secretKey)
+            
             self.finish(json.dumps({"success": True}))
         except Exception as err:
             logger.error("unable to authenticate using credentials {}".format(str(self.request.body)))
@@ -305,24 +264,20 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
         """
         try:
 
-            # delete minio environment variable
-            del os.environ["MINIO_ENDPOINT"]
-            del os.environ["MINIO_ACCESS_KEY"]
-            del os.environ["MINIO_SECRET_KEY"]
-
             # reset the config fields
             self.config.url = ""
             self.config.accessKey = ""
             self.config.secretKey = ""
 
-        
-            configPath = Path("{}/.mc/config.json".format(Path.home()))
-            if configPath.exists():
-                os.remove(configPath)
-
+            minio_config_helper.remove_config_path()
+            # delete minio environment variable
+            env_manager.remove_env_var("MINIO_ENDPOINT")
+            env_manager.remove_env_var("MINIO_ACCESS_KEY")
+            env_manager.remove_env_var("MINIO_SECRET_KEY")
+            
             self.finish(json.dumps({"success": True}))
         except Exception as err:
-            logger.error("unable reconfigure using credentials")
+            logger.error("unable reconfigure using credentials {}".format(str(err)))
             self.finish(json.dumps({"success": False, "message": "{} ".format(str(err))}))
 
 
@@ -369,7 +324,7 @@ class S3PathRouteHandler(CustomAPIHandler):
                 "message": "The requested resource could not be found.",
             }
         except Exception as e:
-            logger.error("Exception encountered during GET {}: {} {}".format(path, e, str(_to_dict(self.config))))
+            logger.error("Exception encountered while reading Minio resources {}: {}".format(path, e))
             result = {"error": 500, "message": str(e)}
 
         self.finish(json.dumps(result))
