@@ -1,4 +1,3 @@
-
 # jupyterlab-minio
 
 [![Github Actions Status](https://github.com/aristide/jupyterlab-minio/workflows/Build/badge.svg)](https://github.com/aristide/jupyterlab-minio/actions/workflows/build.yml)
@@ -142,18 +141,22 @@ Refer to the [ui-tests README](./ui-tests/README.md) for further details.
 2. **Install Visual Studio Code**: Download and install [Visual Studio Code](https://code.visualstudio.com/).
 
 3. **Install the Remote - Containers Extension**:
+
    - In Visual Studio Code, go to the Extensions view (`Ctrl+Shift+X` or `Cmd+Shift+X` on Mac).
    - Search for and install the "Remote - Containers" extension by Microsoft.
 
 4. **Open the Project in a Devcontainer**:
+
    - Open the `jupyterlab-minio` project folder in Visual Studio Code.
    - You should see a prompt to reopen the folder in a devcontainer. Click "Reopen in Container." If you don’t see the prompt, use the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac), type "Remote-Containers: Reopen in Container," and select it.
 
 5. **Wait for the Container to Build**:
+
    - VS Code will build the devcontainer using the `.devcontainer/Dockerfile` or `.devcontainer/devcontainer.json` configuration. This setup may take a few minutes as it installs dependencies and configures the environment.
 
 6. **Access the Development Environment**:
-   - Once the container is running, you can access the terminal (`Ctrl+`` or `Cmd+`` on Mac) and use the VS Code editor as usual. The devcontainer has all necessary tools pre-installed for working on `jupyterlab-minio`.
+
+   - Once the container is running, you can access the terminal (` Ctrl+`` or  `Cmd+``on Mac) and use the VS Code editor as usual. The devcontainer has all necessary tools pre-installed for working on`jupyterlab-minio`.
 
 7. **Run the Extension**:
    - To run and test the extension in JupyterLab, use the development commands from above, such as `jlpm watch` and `jupyter lab --debug --ServerApp.token='' --ip=0.0.0.0 --notebook-dir=notebooks`.
