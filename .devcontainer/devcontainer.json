@@ -32,7 +32,7 @@
     }
   },
   "dockerComposeFile": "./docker-compose.yaml",
-  "service": "jupyter",
+  "service": "jupyter-minio",
   "workspaceFolder": "/workspace",
   "shutdownAction": "stopCompose",
   "mounts": [

@@ -19,7 +19,7 @@ services:
     volumes:
       - data:/data
 
-  jupyter:
+  jupyter-minio:
     image: aristidetm/labextension-dev
     volumes:
       - ..:/workspace

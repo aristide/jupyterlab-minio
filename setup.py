@@ -2,7 +2,6 @@
 jupyterlab-minio setup
 """
 import json
-import sys
 from pathlib import Path
 from jupyter_packaging import (
     create_cmdclass,
@@ -25,12 +24,6 @@ labext_name = pkg_json["name"]
 lab_path = (HERE / labext_name / "labextension")
 
 # Representative files that should exist after a successful build
-ensured_targets = [
-    str(lab_path / "package.json"),
-    str(lab_path / "static/style.js")
-]
-
-
 data_files_spec = [
     ("share/jupyter/labextensions/%s" % labext_name, str(lab_path), "**"),
     ("share/jupyter/labextensions/%s" % labext_name, str(HERE), "install.json"),
