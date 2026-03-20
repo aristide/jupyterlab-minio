@@ -38,5 +38,5 @@
   "mounts": [
     "source=${localEnv:HOME}${localEnv:USERPROFILE}/.ssh,target=/home/jupyter/.ssh,type=bind,consistency=cached"
   ],
-  "postCreateCommand": "npm install -g typescript@5.5.0 && pip install -e . && jupyter labextension develop . --overwrite && jupyter server extension enable jupyterlab-minio && jlpm build"
+  "postCreateCommand": "pip install -e . && jupyter labextension develop . --overwrite && jupyter server extension enable jupyterlab-minio && jlpm build"
 }

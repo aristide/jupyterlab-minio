@@ -90,7 +90,7 @@ WORKDIR /home/jupyter
 # Install Python via pyenv
 ENV PYENV_ROOT=/home/jupyter/.pyenv
 ENV PATH=$PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
-ENV PYTHON_VERSION=3.11.9
+ENV PYTHON_VERSION=3.12.7
 
 # From https://github.com/pyenv/pyenv#basic-github-checkout
 RUN git clone --depth 1 https://github.com/pyenv/pyenv.git .pyenv \
@@ -106,7 +106,7 @@ RUN git clone --depth 1 https://github.com/pyenv/pyenv.git .pyenv \
 ENV PATH=/home/jupyter/.local/bin:$PATH
 
 # Install Node via nvm
-ENV NODE_VERSION=18.18.2
+ENV NODE_VERSION=18.20.4
 ENV NVM_DIR=/home/jupyter/.nvm
 ENV PATH=${NVM_DIR}/versions/node/v${NODE_VERSION}/bin/:${PATH}
 
@@ -127,6 +127,15 @@ RUN mkdir -p /home/jupyter/.local/bin \
     && curl https://dl.min.io/client/mc/release/linux-amd64/mc -o /home/jupyter/.local/bin/mc \
     && chmod +x /home/jupyter/.local/bin/mc
 
+# Install JupyterLab 4 and hatch build tools
+RUN pip install --no-cache-dir \
+    "jupyterlab>=4.0.0,<5" \
+    "hatchling>=1.5.0" \
+    "hatch-jupyter-builder>=0.5" \
+    "hatch-nodejs-version>=0.3.2"
+
+# Install Claude Code CLI
+RUN . ${NVM_DIR}/nvm.sh && npm install -g @anthropic-ai/claude-code
 
 EXPOSE 8888 9999
 
@@ -139,7 +148,10 @@ FROM jupyter AS jupyter-test
 
 RUN node --version \
     && npm --version \
-    && yarn --version
+    && yarn --version \
+    && python --version \
+    && jupyter lab --version \
+    && claude --version
 
 RUN bash -c "node --version" \
     && bash -c "npm --version" \
