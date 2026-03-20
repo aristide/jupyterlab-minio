@@ -6,8 +6,6 @@ import { S3Drive } from './contents';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
-import { h, VirtualDOM } from '@lumino/virtualdom';
-
 import { ServerConnection } from '@jupyterlab/services';
 
 import { URLExt } from '@jupyterlab/coreutils';
@@ -70,22 +68,7 @@ export class S3FileBrowser extends Widget {
       }
     });
 
-    // // updaload  button
-    // const uploadButton = new ToolbarButton({
-    //   icon: fileUploadIcon,
-    //   tooltip: "Upload",
-    //   onClick: () => {
-    //     // confer : https://github.com/jupyterlab/jupyterlab/blob/v3.6.8/packages/filebrowser-extension/src/index.ts#L717
-    //     showDialog({
-    //       title: 'Upload file',
-    //       body: 'You are uploading configs',
-    //       buttons: [Dialog.okButton()]
-    //     });
-    //   }
-    // });
-
     browser.toolbar.insertItem(10, 'filebrowser:refresh', refreshButton);
-    // browser.toolbar.insertItem(11, 'filebrowser:open-url', uploadButton);
     browser.toolbar.insertItem(12, 'setting', editConfigButton);
 
     /**
@@ -160,45 +143,76 @@ namespace Private {
    */
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   export function createS3AuthenticationForm(onSubmit: any): HTMLElement {
-    return VirtualDOM.realize(
-      h.div(
-        { className: 'minio-form' },
-        h.h4('Minio Object Storage Browser'),
-        h.div('This extension allows you to browse Minio'),
-        h.br(),
-        h.form(
-          { id: 'minio-form', method: 'post' },
-          h.p(
-            h.label({}, 'Endpoint URL'),
-            h.br(),
-            h.input({ type: 'url', name: 'url' })
-          ),
-          h.br(),
-          h.p(
-            h.label({}, 'Access Key ID'),
-            h.br(),
-            h.input({ type: 'text', name: 'accessKey' })
-          ),
-          h.br(),
-          h.p(
-            h.label({}, 'Secret Access Key'),
-            h.br(),
-            h.input({ type: 'password', name: 'secretKey' })
-          )
-        ),
-        h.br(),
-        h.p(
-          { className: 's3-connect' },
-          h.button(
-            {
-              onclick: onSubmit,
-              className: 'jp-mod-accept jp-mod-styled'
-            },
-            'Connect'
-          )
-        )
-      )
-    );
+    const container = document.createElement('div');
+    container.className = 'minio-form';
+
+    const title = document.createElement('h4');
+    title.textContent = 'Minio Object Storage Browser';
+    container.appendChild(title);
+
+    const description = document.createElement('div');
+    description.textContent = 'This extension allows you to browse Minio';
+    container.appendChild(description);
+
+    container.appendChild(document.createElement('br'));
+
+    const form = document.createElement('form');
+    form.id = 'minio-form';
+    form.method = 'post';
+
+    // Endpoint URL field
+    const pUrl = document.createElement('p');
+    const labelUrl = document.createElement('label');
+    labelUrl.textContent = 'Endpoint URL';
+    pUrl.appendChild(labelUrl);
+    pUrl.appendChild(document.createElement('br'));
+    const inputUrl = document.createElement('input');
+    inputUrl.type = 'url';
+    inputUrl.name = 'url';
+    pUrl.appendChild(inputUrl);
+    form.appendChild(pUrl);
+
+    form.appendChild(document.createElement('br'));
+
+    // Access Key ID field
+    const pAccess = document.createElement('p');
+    const labelAccess = document.createElement('label');
+    labelAccess.textContent = 'Access Key ID';
+    pAccess.appendChild(labelAccess);
+    pAccess.appendChild(document.createElement('br'));
+    const inputAccess = document.createElement('input');
+    inputAccess.type = 'text';
+    inputAccess.name = 'accessKey';
+    pAccess.appendChild(inputAccess);
+    form.appendChild(pAccess);
+
+    form.appendChild(document.createElement('br'));
+
+    // Secret Access Key field
+    const pSecret = document.createElement('p');
+    const labelSecret = document.createElement('label');
+    labelSecret.textContent = 'Secret Access Key';
+    pSecret.appendChild(labelSecret);
+    pSecret.appendChild(document.createElement('br'));
+    const inputSecret = document.createElement('input');
+    inputSecret.type = 'password';
+    inputSecret.name = 'secretKey';
+    pSecret.appendChild(inputSecret);
+    form.appendChild(pSecret);
+
+    container.appendChild(form);
+    container.appendChild(document.createElement('br'));
+
+    const pButton = document.createElement('p');
+    pButton.className = 's3-connect';
+    const button = document.createElement('button');
+    button.onclick = onSubmit;
+    button.className = 'jp-mod-accept jp-mod-styled';
+    button.textContent = 'Connect';
+    pButton.appendChild(button);
+    container.appendChild(pButton);
+
+    return container;
   }
 
   /**

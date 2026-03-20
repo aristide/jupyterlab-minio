@@ -14,6 +14,8 @@ import { S3Drive } from './contents';
 
 import { S3FileBrowser } from './browser';
 
+import { minioIcon } from './icons';
+
 /**
  * S3 filebrowser plugin state namespace.
  */
@@ -47,8 +49,6 @@ function activateFileBrowser(
   factory: IFileBrowserFactory,
   restorer: ILayoutRestorer,
   settingRegistry: ISettingRegistry
-  // translator: ITranslator,
-  // commandPalette: ICommandPalette | null
 ): void {
   // Add the S3 backend to the contents manager.
   const drive = new S3Drive(app.docRegistry);
@@ -62,7 +62,7 @@ function activateFileBrowser(
 
   const s3Browser = new S3FileBrowser(browser, drive, manager);
 
-  s3Browser.title.iconClass = 'jp-minio-icon jp-SideBar-tabIcon';
+  s3Browser.title.icon = minioIcon;
   s3Browser.title.caption = 'Minio Browser';
 
   s3Browser.id = 'minio-file-browser';

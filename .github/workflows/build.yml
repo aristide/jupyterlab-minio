@@ -13,20 +13,20 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
 
     - name: Install dependencies
-      run: python -m pip install -U wheel twine setuptools packaging jupyterlab-pygments==0.2.2 jupyterlab==3.6.6
+      run: python -m pip install -U "jupyterlab>=4.0.0,<5"
 
     - name: Lint the extension
       run: |
         set -eux
         jlpm
         jlpm run lint:check
-    
+
     - name: Test the extension
       run: |
         set -eux
@@ -49,23 +49,23 @@ jobs:
         pip install build
         python -m build
         pip uninstall -y "jupyterlab-minio" jupyterlab
-  
+
     - name: upload python build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dist
         path: dist
         retention-days: 5
 
     - name: upload typescript build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: lib
         path: lib
         retention-days: 5
 
     - name: Upload extension packages
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: extension-artifacts
         path: dist/jupyterlab_minio*
@@ -79,13 +79,13 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     - name: Install Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.11'
         architecture: 'x64'
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: extension-artifacts
     - name: Install and Test
@@ -95,7 +95,7 @@ jobs:
         sudo rm -rf $(which node)
         sudo rm -rf $(which node)
 
-        pip install  "jupyterlab==3.6.6" jupyterlab_minio*.whl
+        pip install "jupyterlab>=4.0.0,<5" jupyterlab_minio*.whl
 
         jupyter labextension list
         jupyter labextension list 2>&1 | grep -ie ".*jupyterlab-minio.*ok"
@@ -111,20 +111,20 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Base Setup
       uses: jupyterlab/maintainer-tools/.github/actions/base-setup@v1
 
     - name: Download extension package
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: extension-artifacts
-        
+
     - name: Install the extension
       run: |
         set -eux
-        python -m pip install "jupyterlab==3.6.6"  jupyterlab_minio*.whl
+        python -m pip install "jupyterlab>=4.0.0,<5" jupyterlab_minio*.whl
 
     - name: Install dependencies
       working-directory: ui-tests
@@ -133,7 +133,7 @@ jobs:
       run: jlpm install
 
     - name: Set up browser cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ${{ github.workspace }}/pw-browsers
@@ -150,7 +150,7 @@ jobs:
 
     - name: Upload Playwright Test report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: jupyterlab-minio-playwright-tests
         path: |

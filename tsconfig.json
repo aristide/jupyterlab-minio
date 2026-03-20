@@ -17,9 +17,9 @@
     "rootDir": "src",
     "strict": true,
     "strictNullChecks": false,
-    "target": "ES2018",
+    "target": "ES2021",
     "types": ["jest"],
     "sourceMap": true
   },
-  "include": ["src/*"]
+  "include": ["src/**/*"]
 }

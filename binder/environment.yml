@@ -14,8 +14,6 @@ dependencies:
   - python >=3.10,<3.11.0a0
   - nodejs >=18,<19
   # labextension build dependencies
-  - jupyterlab==3.6.6
+  - jupyterlab >=4.0.0,<5
   - pip
   - wheel
-  # additional packages for demos
-  - jupyter_packaging~=0.10
