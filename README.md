@@ -10,9 +10,13 @@ This extension is composed of a Python package named `jupyterlab-minio`.
 
 ![Jupyter Minio](https://raw.githubusercontent.com/aristide/jupyterlab-minio/master/minio-browser-screenshot.gif)
 
-## Installation
+## Requirements
 
-This extension works on JupyterLab 3 only.
+- JupyterLab >= 4.0.0
+- Python >= 3.8
+- Node.js >= 18 (for development only)
+
+## Installation
 
 To install:
 
@@ -48,7 +52,7 @@ Alternatively, you can start without any configuration and fill in your endpoint
 
 ### Development Installation
 
-> **Note:** You will need NodeJS to build the extension package.
+> **Note:** You will need NodeJS >= 18 to build the extension package.
 
 The `jlpm` command is JupyterLab's pinned version of [yarn](https://yarnpkg.com/), but you may also use `yarn` or `npm` as an alternative.
 
@@ -63,11 +67,8 @@ cd jupyterlab-minio
 virtualenv .venv
 source .venv/bin/activate
 
-# Install required packages for development
-pip install jupyter_packaging~=0.10
-
 # Install the package in development mode
-pip install -e .
+pip install -e ".[test]"
 
 # Link the development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
@@ -148,7 +149,7 @@ Refer to the [ui-tests README](./ui-tests/README.md) for further details.
 4. **Open the Project in a Devcontainer**:
 
    - Open the `jupyterlab-minio` project folder in Visual Studio Code.
-   - You should see a prompt to reopen the folder in a devcontainer. Click "Reopen in Container." If you don’t see the prompt, use the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac), type "Remote-Containers: Reopen in Container," and select it.
+   - You should see a prompt to reopen the folder in a devcontainer. Click "Reopen in Container." If you don't see the prompt, use the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac), type "Remote-Containers: Reopen in Container," and select it.
 
 5. **Wait for the Container to Build**:
 
