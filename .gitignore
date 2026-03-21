@@ -128,3 +128,12 @@ notebooks/*
 
 # others
 .Trash*
+
+# Claude Code
+.claude/
+
+# Yarn
+.yarn/
+
+# Error logs
+errors/
