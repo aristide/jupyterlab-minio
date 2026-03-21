@@ -1,13 +1,17 @@
 {
   "name": "Jupyterlab Extension",
   "remoteUser": "jupyter",
-  "forwardPorts": [8888, 9999],
+  "forwardPorts": [8888, 9999, 9000, 9001],
   "portsAttributes": {
     "8888": {
       "label": "Jupyter Lab",
       "onAutoForward": "openBrowser",
       "protocol": "http",
       "url": "http://localhost:8888/lab"
+    },
+    "9001": {
+      "label": "MinIO Console",
+      "onAutoForward": "notify"
     }
   },
   "customizations": {

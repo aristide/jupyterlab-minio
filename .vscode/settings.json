@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "/home/jupyter/.pyenv/versions/3.11.9/bin/python",
+  "python.defaultInterpreterPath": "/home/jupyter/.pyenv/versions/3.12.7/bin/python",
   "[python]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true

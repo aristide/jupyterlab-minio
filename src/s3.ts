@@ -67,6 +67,24 @@ export async function writeFile(
   return response;
 }
 
+export async function uploadFile(
+  path: string,
+  base64Content: string
+): Promise<any> {
+  const settings = ServerConnection.makeSettings();
+  const response = await (
+    await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, 'jupyterlab-minio/files', path),
+      {
+        method: 'PUT',
+        body: JSON.stringify({ content: base64Content, format: 'base64' })
+      },
+      settings
+    )
+  ).json();
+  return response;
+}
+
 export async function createDirectory(path: string): Promise<Contents.IModel> {
   const settings = ServerConnection.makeSettings(); // can be stored as class var
   await (
@@ -158,4 +176,53 @@ export async function read(path: string): Promise<Contents.IModel> {
   ).json();
   return response;
   // TODO: error handling
+}
+
+export async function createBucket(name: string): Promise<any> {
+  const settings = ServerConnection.makeSettings();
+  const response = await (
+    await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, 'jupyterlab-minio/buckets'),
+      { method: 'POST', body: JSON.stringify({ bucket: name }) },
+      settings
+    )
+  ).json();
+  return response;
+}
+
+export async function deleteBucket(name: string): Promise<any> {
+  const settings = ServerConnection.makeSettings();
+  const response = await (
+    await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, 'jupyterlab-minio/buckets', name),
+      { method: 'DELETE' },
+      settings
+    )
+  ).json();
+  return response;
+}
+
+export async function transferFile(
+  sourceType: string,
+  sourcePath: string,
+  destType: string,
+  destPath: string
+): Promise<any> {
+  const settings = ServerConnection.makeSettings();
+  const response = await (
+    await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, 'jupyterlab-minio/transfer'),
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          source_type: sourceType,
+          source_path: sourcePath,
+          dest_type: destType,
+          dest_path: destPath
+        })
+      },
+      settings
+    )
+  ).json();
+  return response;
 }

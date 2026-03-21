@@ -168,7 +168,24 @@ export class S3Drive implements Contents.IDrive {
         break;
       case 'directory':
         if (options.path === '') {
-          throw new Error('Bucket creation is not currently supported.');
+          s3contents = await s3.createBucket(filename);
+          const bucketContents: Contents.IModel = {
+            type: 'directory',
+            path: '',
+            name: filename,
+            format: 'json',
+            content: [],
+            created: '',
+            writable: true,
+            last_modified: '',
+            mimetype: ''
+          };
+          this._fileChanged.emit({
+            type: 'new',
+            oldValue: null,
+            newValue: bucketContents
+          });
+          return bucketContents;
         }
         s3contents = await s3.createDirectory(options.path + '/' + filename);
         break;
@@ -210,11 +227,23 @@ export class S3Drive implements Contents.IDrive {
    * @returns A promise which resolves when the file is deleted.
    */
   async delete(path: string): Promise<void> {
-    const deletionRequest = await s3.deleteFile(path);
-    if (deletionRequest.error && deletionRequest.error === 'DIR_NOT_EMPTY') {
-      throw new Error(
-        `${path} is not empty. Deletion of non-empty directories is not currently supported.`
-      );
+    let deletionRequest;
+    if (!path.includes('/')) {
+      // This is a bucket (no slash in path)
+      deletionRequest = await s3.deleteBucket(path);
+      if (deletionRequest.error) {
+        throw new Error(deletionRequest.message || 'Failed to delete bucket.');
+      }
+    } else {
+      deletionRequest = await s3.deleteFile(path);
+      if (deletionRequest.error) {
+        if (deletionRequest.error === 'DIR_NOT_EMPTY') {
+          throw new Error(
+            `${path} is not empty. Deletion of non-empty directories is not currently supported.`
+          );
+        }
+        throw new Error(deletionRequest.message || `Failed to delete ${path}.`);
+      }
     }
     this._fileChanged.emit({
       type: 'delete',

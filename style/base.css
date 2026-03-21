@@ -95,3 +95,48 @@
 #minio-filebrowser .jp-id-modified {
   display: none;
 }
+
+/* S3 Path Picker Dialog */
+.minio-path-picker {
+  min-width: 400px;
+  padding: 8px 0;
+}
+
+.minio-path-picker label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.minio-path-input {
+  padding: 4px 8px;
+  border: 1px solid var(--jp-border-color1);
+  border-radius: 2px;
+}
+
+.minio-path-list {
+  background: var(--jp-layout-color0);
+  border-radius: 2px;
+}
+
+/* S3 Browser Filter */
+.jp-S3Browser-filterContainer {
+  display: flex;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--jp-border-color2);
+}
+
+.jp-S3Browser-filterInput {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid var(--jp-border-color1);
+  border-radius: 2px;
+  background: var(--jp-layout-color0);
+  color: var(--jp-ui-font-color1);
+  font-size: var(--jp-ui-font-size1);
+  outline: none;
+}
+
+.jp-S3Browser-filterInput:focus {
+  border-color: var(--jp-brand-color1);
+}

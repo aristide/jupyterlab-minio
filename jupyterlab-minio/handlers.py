@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+import re
 import logging
 import colorlog
 from pathlib import Path
@@ -81,6 +82,58 @@ def create_s3_resource(config):
 
     else:
         return boto3.resource("s3")
+
+
+def create_s3_client(config):
+
+    if config.url and config.accessKey and config.secretKey:
+
+        return boto3.client(
+            "s3",
+            aws_access_key_id=config.accessKey,
+            aws_secret_access_key=config.secretKey,
+            endpoint_url=config.url,
+        )
+
+    else:
+        return boto3.client("s3")
+
+
+def _s3_copy_or_move(s3fs_instance, s3_client, source, dest, delete_source=False):
+    """
+    Copy (or move) S3 objects using singular copy_object/delete_object calls
+    to avoid the Content-MD5 requirement of the batch DeleteObjects API.
+    """
+    src_bucket, src_key = source.split("/", 1)
+    dst_bucket, dst_key = dest.split("/", 1)
+
+    if s3fs_instance.isdir(source):
+        objects = s3fs_instance.ls(source, detail=False)
+        for obj_path in objects:
+            obj_bucket, obj_key = obj_path.split("/", 1)
+            relative = obj_key[len(src_key):]
+            new_key = dst_key + relative
+            s3_client.copy_object(
+                Bucket=dst_bucket,
+                Key=new_key,
+                CopySource={"Bucket": obj_bucket, "Key": obj_key},
+            )
+            if delete_source:
+                s3_client.delete_object(Bucket=obj_bucket, Key=obj_key)
+        if delete_source:
+            for suffix in ["/", ""]:
+                try:
+                    s3_client.delete_object(Bucket=src_bucket, Key=src_key + suffix)
+                except Exception:
+                    pass
+    else:
+        s3_client.copy_object(
+            Bucket=dst_bucket,
+            Key=dst_key,
+            CopySource={"Bucket": src_bucket, "Key": src_key},
+        )
+        if delete_source:
+            s3_client.delete_object(Bucket=src_bucket, Key=src_key)
 
 
 def get_minio_credentials():
@@ -345,32 +398,15 @@ class S3PathRouteHandler(CustomAPIHandler):
 
             if "X-Custom-S3-Copy-Src" in self.request.headers:
                 source = self.request.headers["X-Custom-S3-Copy-Src"]
+                s3_client = create_s3_client(self.config)
+                _s3_copy_or_move(self.s3fs, s3_client, source, path, delete_source=False)
+                result = {"path": path, "type": "file"}
 
-                # copying issue is because of dir/file mixup?
-                if "/" not in source:
-                    path = path + "/.keep"
-
-                #  logger.info("copying {} -> {}".format(source, path))
-                self.s3fs.cp(source, path, recursive=True)
-                # why read again?
-                with self.s3fs.open(path, "rb") as f:
-                    result = {
-                        "path": path,
-                        "type": "file",
-                        "content": base64.encodebytes(f.read()).decode("ascii"),
-                    }
             elif "X-Custom-S3-Move-Src" in self.request.headers:
                 source = self.request.headers["X-Custom-S3-Move-Src"]
-
-                #  logger.info("moving {} -> {}".format(source, path))
-                self.s3fs.move(source, path, recursive=True)
-                # why read again?
-                with self.s3fs.open(path, "rb") as f:
-                    result = {
-                        "path": path,
-                        "type": "file",
-                        "content": base64.encodebytes(f.read()).decode("ascii"),
-                    }
+                s3_client = create_s3_client(self.config)
+                _s3_copy_or_move(self.s3fs, s3_client, source, path, delete_source=True)
+                result = {"path": path, "type": "file"}
             elif "X-Custom-S3-Is-Dir" in self.request.headers:
                 path = path.lower()
                 if not path[-1] == "/":
@@ -381,13 +417,22 @@ class S3PathRouteHandler(CustomAPIHandler):
                 self.s3fs.touch(path + ".keep")
             elif self.request.body:
                 request = json.loads(self.request.body)
-                with self.s3fs.open(path, "w") as f:
-                    f.write(request["content"])
-                    # todo: optimize
+                content = request["content"]
+                if request.get("format") == "base64":
+                    content = base64.b64decode(content)
+                    with self.s3fs.open(path, "wb") as f:
+                        f.write(content)
                     result = {
                         "path": path,
                         "type": "file",
-                        "content": request["content"],
+                    }
+                else:
+                    with self.s3fs.open(path, "w") as f:
+                        f.write(content)
+                    result = {
+                        "path": path,
+                        "type": "file",
+                        "content": content,
                     }
 
         except S3ResourceNotFoundException as e:
@@ -405,45 +450,61 @@ class S3PathRouteHandler(CustomAPIHandler):
     @tornado.web.authenticated
     def delete(self, path=""):
         """
-        Takes a path and returns lists of files/objects
-        and directories/prefixes based on the path.
+        Delete a file or empty directory from S3.
+        Uses boto3 client delete_object (singular) to avoid
+        Content-MD5 issues with the batch DeleteObjects API.
         """
         path = path[1:]
-        #  logger.info("DELETE: {}".format(path))
 
         result = {}
 
         try:
             if not self.s3fs:
                 self.s3fs = create_s3fs(self.config)
-            if not self.s3_resource:
-                self.s3_resource = create_s3_resource(self.config)
 
+            s3_client = create_s3_client(self.config)
+            bucket_name, key = path.split("/", 1)
+
+            # Remove .keep marker if present
             if self.s3fs.exists(path + "/.keep"):
-                self.s3fs.rm(path + "/.keep")
+                s3_client.delete_object(Bucket=bucket_name, Key=key + "/.keep")
 
-            objects_matching_prefix = self.s3fs.listdir(path + "/")
-            is_directory = (len(objects_matching_prefix) > 1) or (
-                (len(objects_matching_prefix) == 1)
-                and objects_matching_prefix[0]["Key"] != path
-            )
+            # Check what objects remain under this prefix
+            try:
+                objects_matching_prefix = self.s3fs.listdir(path + "/")
+            except FileNotFoundError:
+                objects_matching_prefix = []
 
-            if is_directory:
-                if (len(objects_matching_prefix) > 1) or (
-                    (len(objects_matching_prefix) == 1)
-                    and objects_matching_prefix[0]["Key"] != path + "/"
-                ):
-                    raise DirectoryNotEmptyException()
-                else:
-                    # for some reason s3fs.rm doesn't work reliably
-                    if path.count("/") > 1:
-                        bucket_name, prefix = path.split("/", 1)
-                        bucket = self.s3_resource.Bucket(bucket_name)
-                        bucket.objects.filter(Prefix=prefix).delete()
-                    else:
-                        self.s3fs.rm(path)
+            if len(objects_matching_prefix) == 0:
+                # Nothing left — folder is already gone (was just .keep)
+                try:
+                    s3_client.delete_object(Bucket=bucket_name, Key=key + "/")
+                except Exception:
+                    pass
+                try:
+                    s3_client.delete_object(Bucket=bucket_name, Key=key)
+                except Exception:
+                    pass
             else:
-                self.s3fs.rm(path)
+                is_directory = (len(objects_matching_prefix) > 1) or (
+                    (len(objects_matching_prefix) == 1)
+                    and objects_matching_prefix[0]["Key"] != path
+                )
+
+                if is_directory:
+                    # Delete all objects under this prefix recursively
+                    all_objects = self.s3fs.ls(path, detail=False)
+                    for obj_path in all_objects:
+                        obj_bucket, obj_key = obj_path.split("/", 1)
+                        s3_client.delete_object(Bucket=obj_bucket, Key=obj_key)
+                    # Clean up directory markers
+                    for suffix in ["/", ""]:
+                        try:
+                            s3_client.delete_object(Bucket=bucket_name, Key=key + suffix)
+                        except Exception:
+                            pass
+                else:
+                    s3_client.delete_object(Bucket=bucket_name, Key=key)
 
         except S3ResourceNotFoundException as e:
             logger.error(e)
@@ -462,6 +523,187 @@ class S3PathRouteHandler(CustomAPIHandler):
         self.finish(json.dumps(result))
 
 
+class BucketRouteHandler(CustomAPIHandler):
+    """
+    Handles requests for creating and deleting S3 buckets
+    """
+
+    @tornado.web.authenticated
+    def post(self, path=""):
+        """
+        Create a new bucket.
+        Body: {"bucket": "name"}
+        """
+        result = {}
+        try:
+            req = json.loads(self.request.body)
+            name = req.get("bucket", "").strip()
+
+            # Validate bucket name: lowercase, 3-63 chars, alphanumeric and hyphens only
+            if not re.match(r'^[a-z0-9][a-z0-9\-]{1,61}[a-z0-9]$', name):
+                self.set_status(400)
+                self.finish(json.dumps({
+                    "error": 400,
+                    "message": "Invalid bucket name. Must be 3-63 characters, lowercase alphanumeric and hyphens only, cannot start or end with a hyphen."
+                }))
+                return
+
+            s3_resource = create_s3_resource(self.config)
+            s3_resource.create_bucket(Bucket=name)
+            result = {"success": True, "bucket": name}
+
+        except Exception as e:
+            logger.error("Error creating bucket: {}".format(e))
+            self.set_status(500)
+            result = {"error": 500, "message": str(e)}
+
+        self.finish(json.dumps(result))
+
+    @tornado.web.authenticated
+    def delete(self, path=""):
+        """
+        Delete a bucket. The bucket name is extracted from the URL path.
+        """
+        name = path.strip("/")
+        result = {}
+        try:
+            s3_resource = create_s3_resource(self.config)
+            bucket = s3_resource.Bucket(name)
+            bucket.delete()
+            result = {"success": True}
+
+        except Exception as e:
+            error_code = getattr(e, 'response', {}).get('Error', {}).get('Code', '')
+            if error_code == 'BucketNotEmpty' or 'not empty' in str(e).lower():
+                self.set_status(400)
+                result = {"error": 400, "message": "Bucket is not empty. Delete all objects first."}
+            else:
+                logger.error("Error deleting bucket: {}".format(e))
+                self.set_status(500)
+                result = {"error": 500, "message": str(e)}
+
+        self.finish(json.dumps(result))
+
+
+class TransferRouteHandler(CustomAPIHandler):
+    """
+    Handles file transfers between S3 and local filesystem
+    """
+
+    s3fs = None
+
+    @tornado.web.authenticated
+    def post(self, path=""):
+        """
+        Transfer files between S3 and local filesystem.
+        Body: {
+            "source_type": "s3" | "local",
+            "source_path": "...",
+            "dest_type": "local" | "s3",
+            "dest_path": "..."
+        }
+        """
+        result = {}
+        try:
+            req = json.loads(self.request.body)
+            source_type = req.get("source_type")
+            source_path = req.get("source_path")
+            dest_type = req.get("dest_type")
+            dest_path = req.get("dest_path")
+
+            if not all([source_type, source_path, dest_type, dest_path]):
+                self.set_status(400)
+                self.finish(json.dumps({"error": 400, "message": "Missing required fields."}))
+                return
+
+            if source_type == dest_type:
+                self.set_status(400)
+                self.finish(json.dumps({"error": 400, "message": "source_type and dest_type must be different."}))
+                return
+
+            root_dir = self.settings.get("server_root_dir", os.path.expanduser("~"))
+
+            if not self.s3fs:
+                self.s3fs = create_s3fs(self.config)
+
+            if source_type == "s3" and dest_type == "local":
+                local_abs = validate_local_path(dest_path, root_dir)
+                # Check if source is a directory
+                if self.s3fs.isdir(source_path):
+                    _transfer_s3_to_local_recursive(self.s3fs, source_path, local_abs)
+                else:
+                    os.makedirs(os.path.dirname(local_abs), exist_ok=True)
+                    with self.s3fs.open(source_path, "rb") as sf:
+                        with open(local_abs, "wb") as lf:
+                            lf.write(sf.read())
+                result = {"success": True}
+
+            elif source_type == "local" and dest_type == "s3":
+                local_abs = validate_local_path(source_path, root_dir)
+                if os.path.isdir(local_abs):
+                    _transfer_local_to_s3_recursive(self.s3fs, local_abs, dest_path)
+                else:
+                    with open(local_abs, "rb") as lf:
+                        with self.s3fs.open(dest_path, "wb") as sf:
+                            sf.write(lf.read())
+                result = {"success": True}
+            else:
+                self.set_status(400)
+                self.finish(json.dumps({"error": 400, "message": "Invalid source_type/dest_type combination."}))
+                return
+
+        except ValueError as e:
+            self.set_status(400)
+            result = {"error": 400, "message": str(e)}
+        except Exception as e:
+            logger.error("Error during transfer: {}".format(e))
+            self.set_status(500)
+            result = {"error": 500, "message": str(e)}
+
+        self.finish(json.dumps(result))
+
+
+def validate_local_path(path, root_dir):
+    """
+    Resolve the path and verify it stays within the root directory.
+    Prevents path traversal attacks with '..'.
+    """
+    root = os.path.realpath(root_dir)
+    resolved = os.path.realpath(os.path.join(root, path))
+    if not resolved.startswith(root + os.sep) and resolved != root:
+        raise ValueError("Path traversal detected: path must be within the Jupyter root directory.")
+    return resolved
+
+
+def _transfer_s3_to_local_recursive(s3filesystem, s3_path, local_path):
+    """Recursively transfer a directory from S3 to local filesystem."""
+    os.makedirs(local_path, exist_ok=True)
+    for dirpath, dirnames, filenames in s3filesystem.walk(s3_path):
+        # Compute relative path from the source root
+        rel = os.path.relpath(dirpath, s3_path) if dirpath != s3_path else ""
+        local_dir = os.path.join(local_path, rel) if rel else local_path
+        os.makedirs(local_dir, exist_ok=True)
+        for fname in filenames:
+            s3_file = dirpath + "/" + fname
+            local_file = os.path.join(local_dir, fname)
+            with s3filesystem.open(s3_file, "rb") as sf:
+                with open(local_file, "wb") as lf:
+                    lf.write(sf.read())
+
+
+def _transfer_local_to_s3_recursive(s3filesystem, local_path, s3_path):
+    """Recursively transfer a directory from local filesystem to S3."""
+    for dirpath, dirnames, filenames in os.walk(local_path):
+        rel = os.path.relpath(dirpath, local_path)
+        s3_dir = s3_path + "/" + rel if rel != "." else s3_path
+        for fname in filenames:
+            local_file = os.path.join(dirpath, fname)
+            s3_file = s3_dir + "/" + fname
+            with open(local_file, "rb") as lf:
+                with s3filesystem.open(s3_file, "wb") as sf:
+                    sf.write(lf.read())
+
+
 ########################### Setup lab handler
 def setup_handlers(web_app):
     host_pattern = ".*"
@@ -470,5 +712,7 @@ def setup_handlers(web_app):
     handlers = [
         (url_path_join(base_url, "jupyterlab-minio", "auth(.*)"), AuthRouteHandler),
         (url_path_join(base_url, "jupyterlab-minio", "files(.*)"), S3PathRouteHandler),
+        (url_path_join(base_url, "jupyterlab-minio", "buckets(.*)"), BucketRouteHandler),
+        (url_path_join(base_url, "jupyterlab-minio", "transfer(.*)"), TransferRouteHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)

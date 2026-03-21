@@ -48,7 +48,7 @@ exclude = [".github", "binder"]
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab-minio/labextension" = "share/jupyter/labextensions/jupyterlab-minio"
 "install.json" = "share/jupyter/labextensions/jupyterlab-minio/install.json"
-"jupyter-config/server-config" = "etc/jupyter/jupyter_server_config.d"
+"jupyter-config/server-config/jupyterlab-minio.json" = "etc/jupyter/jupyter_server_config.d/jupyterlab-minio.json"
 
 [tool.hatch.build.hooks.version]
 path = "jupyterlab-minio/_version.py"

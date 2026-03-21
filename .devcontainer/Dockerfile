@@ -135,7 +135,7 @@ RUN pip install --no-cache-dir \
     "hatch-nodejs-version>=0.3.2"
 
 # Install Claude Code CLI
-RUN . ${NVM_DIR}/nvm.sh && npm install -g @anthropic-ai/claude-code
+RUN curl -fsSL https://claude.ai/install.sh | bash
 
 EXPOSE 8888 9999
 
