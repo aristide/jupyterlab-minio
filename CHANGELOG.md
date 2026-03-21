@@ -2,6 +2,28 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 2.1.0
+
+### Added
+
+- **Bucket management**: Create and delete S3 buckets from the context menu
+- **Cross-bucket operations**: Copy and move files/folders between S3 paths via a path picker dialog
+- **S3 to local transfer**: Copy files between S3 and the local filesystem
+- **Copy to S3**: Right-click files in the default file browser to copy them to S3
+- **Upload button**: Upload files from your computer directly to S3 (toolbar button)
+- **Filter button**: Filter files/folders by name in the current S3 directory (toolbar button)
+- **Create Folder button**: Create new folders in the current S3 directory (toolbar button)
+- **Delete from S3**: Context menu item for deleting files and folders (supports recursive deletion of non-empty folders)
+
+### Fixed
+
+- Delete operations now use boto3 `delete_object` (singular) instead of `s3fs.rm()` to avoid `MissingContentMD5` errors with MinIO's `DeleteObjects` batch API
+- Rename/move/copy operations now use boto3 `copy_object` + `delete_object` instead of `s3fs.move()`/`s3fs.cp()` to avoid the same Content-MD5 issue
+- "Copy to S3" context menu no longer appears in the S3 browser (scoped to default file browser only)
+- "Copy to S3" now correctly reads the selected file path from the default file browser
+- `S3Drive.delete()` now surfaces all backend errors, not just `DIR_NOT_EMPTY`
+- Filter input dynamically resets the file list when clearing search text
+
 ## 2.0.0
 
 ### Breaking Changes

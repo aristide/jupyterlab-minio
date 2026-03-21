@@ -32,6 +32,20 @@ jupyter server extension enable jupyterlab-minio
 
 to make sure the server extension is enabled. Then, restart (stop and start) JupyterLab.
 
+## Features
+
+- **Browse S3/MinIO** buckets and objects in a dedicated sidebar panel
+- **Bucket management**: Create and delete buckets
+- **File operations**: Upload, download, rename, copy, move, and delete files and folders
+- **Cross-bucket copy/move**: Copy or move files between different S3 paths via a path picker dialog
+- **S3 to local transfer**: Copy files between S3 and the local JupyterLab filesystem
+- **Upload from computer**: Upload files directly from your computer to S3 using the toolbar upload button
+- **Filter**: Quickly filter files and folders by name in the current directory
+- **Create folders**: Create new folders within buckets from the toolbar
+- **Recursive deletion**: Delete folders and all their contents
+- **Copy to S3**: Right-click files in the default JupyterLab file browser to copy them to S3
+- **Authentication**: Configure credentials via environment variables, `~/.mc/config.json`, or the built-in form
+
 ## Usage
 
 ### Configuration
@@ -47,6 +61,28 @@ export MINIO_SECRET_KEY="secret"
 ```
 
 Alternatively, you can start without any configuration and fill in your endpoint and credentials through the form when prompted.
+
+### S3 Browser Toolbar
+
+The S3 browser sidebar includes toolbar buttons for common operations:
+
+| Button | Action |
+|--------|--------|
+| **+** | Create a new bucket (at root level) |
+| **New Folder** | Create a new folder in the current directory |
+| **Upload** | Upload files from your computer to the current S3 directory |
+| **Filter** | Toggle a search bar to filter files by name |
+| **Refresh** | Refresh the current directory listing |
+| **Settings** | Reset your S3 credentials |
+
+### Context Menu
+
+Right-click on files or folders in the S3 browser for additional options:
+
+- **Copy to S3 Path...** — Copy to another S3 location
+- **Move to S3 Path...** — Move to another S3 location
+- **Copy to Local Filesystem...** — Download to the local JupyterLab filesystem
+- **Delete from S3** — Delete the selected file or folder (folders are deleted recursively)
 
 ## Development
 
