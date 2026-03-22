@@ -36,12 +36,11 @@ jobs:
       run: |
         set -eux
 
-        python -m pip install .
+        python -m pip install ".[test]"
 
         jupyter labextension list
-        
-        jupyter labextension list 2>&1 | grep -ie ".*jupyterlab-minio.*ok"
-        
+        jupyter labextension list 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -ie "jupyterlab-minio.*ok"
+        python -m jupyterlab.browser_check
 
     - name: Package the extension
       run: |
@@ -99,7 +98,7 @@ jobs:
         pip install "jupyterlab>=4.0.0,<5" jupyterlab_minio*.whl
 
         jupyter labextension list
-        jupyter labextension list 2>&1 | grep -ie ".*jupyterlab-minio.*ok"
+        jupyter labextension list 2>&1 | sed 's/\x1b\[[0-9;]*m//g' | grep -ie "jupyterlab-minio.*ok"
         python -m jupyterlab.browser_check --no-chrome-test
 
   integration-tests:
