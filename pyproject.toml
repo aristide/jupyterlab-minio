@@ -71,3 +71,7 @@ build_cmd = "install:extension"
 npm = ["jlpm"]
 source_dir = "src"
 build_dir = "jupyterlab-minio/labextension"
+
+[tool.pytest.ini_options]
+testpaths = ["jupyterlab-minio/tests"]
+addopts = "--import-mode=importlib"

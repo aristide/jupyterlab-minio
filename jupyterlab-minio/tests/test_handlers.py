@@ -4,17 +4,45 @@ import tempfile
 import pytest
 from unittest.mock import patch, MagicMock
 
-# Import the validate_local_path function from the parent package
+# Import validate_local_path from the parent package.
+# The package directory uses hyphens, so we set up the package context
+# before importing handlers.py (which uses relative imports).
 import importlib
+import importlib.util
 import sys
+import types
 
-# The package directory uses hyphens, so we need to handle import carefully
+_pkg_dir = os.path.dirname(os.path.dirname(__file__))
+
+# Create a synthetic package so relative imports work
+_pkg_name = "jupyterlab_minio_pkg"
+_pkg = types.ModuleType(_pkg_name)
+_pkg.__path__ = [_pkg_dir]
+_pkg.__package__ = _pkg_name
+sys.modules[_pkg_name] = _pkg
+
+# Load utils first (handlers imports from .utils)
+_utils_spec = importlib.util.spec_from_file_location(
+    f"{_pkg_name}.utils",
+    os.path.join(_pkg_dir, "utils.py"),
+    submodule_search_locations=[],
+)
+_utils_mod = importlib.util.module_from_spec(_utils_spec)
+_utils_mod.__package__ = _pkg_name
+sys.modules[f"{_pkg_name}.utils"] = _utils_mod
+_utils_spec.loader.exec_module(_utils_mod)
+
+# Now load handlers
 _handlers_spec = importlib.util.spec_from_file_location(
-    "handlers",
-    os.path.join(os.path.dirname(os.path.dirname(__file__)), "handlers.py")
+    f"{_pkg_name}.handlers",
+    os.path.join(_pkg_dir, "handlers.py"),
+    submodule_search_locations=[],
 )
 _handlers_mod = importlib.util.module_from_spec(_handlers_spec)
+_handlers_mod.__package__ = _pkg_name
+sys.modules[f"{_pkg_name}.handlers"] = _handlers_mod
 _handlers_spec.loader.exec_module(_handlers_mod)
+
 validate_local_path = _handlers_mod.validate_local_path
 
 

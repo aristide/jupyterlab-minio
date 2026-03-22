@@ -15,7 +15,6 @@ const {
   moduleFileExtensions,
   moduleNameMapper,
   preset,
-  setupFilesAfterSetup,
   setupFiles,
   testPathIgnorePatterns,
   transform
@@ -25,8 +24,8 @@ module.exports = {
   moduleFileExtensions,
   moduleNameMapper,
   preset,
-  setupFilesAfterSetup,
   setupFiles,
+  testEnvironment: 'jsdom',
   testPathIgnorePatterns,
   transform: {
     ...transform,
