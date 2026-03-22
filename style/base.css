@@ -1,39 +1,14 @@
-[data-jp-theme-light='true'] .jp-minio-icon {
-  background-image: url('m-light.svg');
-}
-
-[data-jp-theme-light='false'] .jp-minio-icon {
-  background-image: url('m-dark.svg');
-}
-
-.jp-SideBar .lm-TabBar-content .lm-TabBar-tab .jp-minio-icon {
-  background-size: 90%;
-}
-
-[data-jp-theme-light='true']
-  #minio-filebrowser
+/* Breadcrumb root icon — uses background-image since it's CSS-based, not LabIcon */
+#minio-filebrowser
   .jp-FileBrowser-crumbs
   .jp-BreadCrumbs-item:first-child {
-  background-image: url('m-light.svg');
+  background-image: url('dlake.svg');
 }
 
-[data-jp-theme-light='false']
-  #minio-filebrowser
-  .jp-FileBrowser-crumbs
-  .jp-BreadCrumbs-item:first-child {
-  background-image: url('m-dark.svg');
-}
-
-[data-jp-theme-light='true']
-  #minio-filebrowser.root
+/* Bucket folder icon at root level */
+#minio-filebrowser.root
   .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
-  background-image: url('m-light.svg');
-}
-
-[data-jp-theme-light='false']
-  #minio-filebrowser.root
-  .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {
-  background-image: url('bucket-dark.svg');
+  background-image: url('dlake.svg');
 }
 
 #minio-filebrowser.root .jp-DirListing-itemIcon.jp-MaterialIcon.jp-FolderIcon {

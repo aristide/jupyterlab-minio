@@ -2,7 +2,13 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
-## 2.1.0
+## 2.0.0
+
+### Breaking Changes
+
+- Requires JupyterLab >= 4.0.0 (drops JupyterLab 3.x support)
+- Requires `jupyter_server` >= 2.0.1 (drops notebook server support)
+- Requires Python >= 3.8
 
 ### Added
 
@@ -15,6 +21,21 @@
 - **Create Folder button**: Create new folders in the current S3 directory (toolbar button)
 - **Delete from S3**: Context menu item for deleting files and folders (supports recursive deletion of non-empty folders)
 
+### Changed
+
+- Updated all `@jupyterlab/*` dependencies to v4.x
+- Updated all `@lumino/*` dependencies to v2.x
+- Replaced `jupyter_packaging` / `setuptools` build system with `hatchling` / `hatch-jupyter-builder`
+- Replaced `iconClass` CSS-based sidebar icon with `LabIcon` for proper JupyterLab 4 icon rendering
+- Replaced `@lumino/virtualdom` usage with standard DOM APIs in the authentication form
+- Replaced Minio server-rack logo with new data lake icon (database with water waves)
+- Icon now uses JupyterLab's `jp-icon3` CSS class with `var(--jp-inverse-layout-color3)` for automatic theme adaptation (light, dark, dark high contrast)
+- Updated Lumino CSS class prefixes from `p-` to `lm-`
+- Updated TypeScript target from ES2018 to ES2021
+- Updated TypeScript to v5.5, ESLint to v8, Prettier to v3, Jest to v29, Stylelint to v16
+- Updated CI workflows to use GitHub Actions v4 and JupyterLab 4
+- Updated `@jupyterlab/galata` to v5.x for integration tests
+
 ### Fixed
 
 - Delete operations now use boto3 `delete_object` (singular) instead of `s3fs.rm()` to avoid `MissingContentMD5` errors with MinIO's `DeleteObjects` batch API
@@ -23,27 +44,6 @@
 - "Copy to S3" now correctly reads the selected file path from the default file browser
 - `S3Drive.delete()` now surfaces all backend errors, not just `DIR_NOT_EMPTY`
 - Filter input dynamically resets the file list when clearing search text
-
-## 2.0.0
-
-### Breaking Changes
-
-- Requires JupyterLab >= 4.0.0 (drops JupyterLab 3.x support)
-- Requires `jupyter_server` >= 2.0.1 (drops notebook server support)
-- Requires Python >= 3.8
-
-### Changed
-
-- Updated all `@jupyterlab/*` dependencies to v4.x
-- Updated all `@lumino/*` dependencies to v2.x
-- Replaced `jupyter_packaging` / `setuptools` build system with `hatchling` / `hatch-jupyter-builder`
-- Replaced `iconClass` CSS-based sidebar icon with `LabIcon` for proper JupyterLab 4 icon rendering
-- Replaced `@lumino/virtualdom` usage with standard DOM APIs in the authentication form
-- Updated Lumino CSS class prefixes from `p-` to `lm-`
-- Updated TypeScript target from ES2018 to ES2021
-- Updated TypeScript to v5.5, ESLint to v8, Prettier to v3, Jest to v29, Stylelint to v16
-- Updated CI workflows to use GitHub Actions v4 and JupyterLab 4
-- Updated `@jupyterlab/galata` to v5.x for integration tests
 
 ### Removed
 

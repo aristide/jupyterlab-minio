@@ -45,6 +45,7 @@ to make sure the server extension is enabled. Then, restart (stop and start) Jup
 - **Recursive deletion**: Delete folders and all their contents
 - **Copy to S3**: Right-click files in the default JupyterLab file browser to copy them to S3
 - **Authentication**: Configure credentials via environment variables, `~/.mc/config.json`, or the built-in form
+- **Theme-aware icon**: Sidebar icon automatically adapts to JupyterLab Light, Dark, and Dark High Contrast themes
 
 ## Usage
 
