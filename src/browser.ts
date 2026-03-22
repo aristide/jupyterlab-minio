@@ -12,7 +12,12 @@ import { URLExt } from '@jupyterlab/coreutils';
 
 import { showErrorMessage } from '@jupyterlab/apputils';
 
-import { ToolbarButton, showDialog, Dialog, InputDialog } from '@jupyterlab/apputils';
+import {
+  ToolbarButton,
+  showDialog,
+  Dialog,
+  InputDialog
+} from '@jupyterlab/apputils';
 
 import {
   settingsIcon,
@@ -84,7 +89,8 @@ export class S3FileBrowser extends Widget {
       onClick: async () => {
         const result = await InputDialog.getText({
           title: 'Create New Bucket',
-          label: 'Bucket name (lowercase, 3-63 chars, alphanumeric and hyphens):',
+          label:
+            'Bucket name (lowercase, 3-63 chars, alphanumeric and hyphens):',
           placeholder: 'my-bucket-name'
         });
         if (result.button.accept && result.value) {
@@ -95,7 +101,10 @@ export class S3FileBrowser extends Widget {
           try {
             const response = await s3.createBucket(name);
             if (response.error) {
-              void showErrorMessage('Bucket Creation Error', Error(response.message));
+              void showErrorMessage(
+                'Bucket Creation Error',
+                Error(response.message)
+              );
             } else {
               browser.model.refresh();
             }
@@ -216,7 +225,10 @@ export class S3FileBrowser extends Widget {
           try {
             const response = await s3.createDirectory(currentPath + '/' + name);
             if ((response as any).error) {
-              void showErrorMessage('Create Folder Error', Error((response as any).message));
+              void showErrorMessage(
+                'Create Folder Error',
+                Error((response as any).message)
+              );
             } else {
               browser.model.refresh();
             }
@@ -417,7 +429,8 @@ namespace Private {
         const base64 = result.split(',')[1];
         resolve(base64);
       };
-      reader.onerror = () => reject(new Error(`Failed to read file: ${file.name}`));
+      reader.onerror = () =>
+        reject(new Error(`Failed to read file: ${file.name}`));
       reader.readAsDataURL(file);
     });
   }

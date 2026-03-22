@@ -83,7 +83,7 @@ export class S3Drive implements Contents.IDrive {
       const types = this._registry.getFileTypesForPath(path);
       const fileType =
         types.length === 0
-          ? this._registry.getFileType('text') ?? undefined
+          ? (this._registry.getFileType('text') ?? undefined)
           : types[0];
       const mimetype = fileType.mimeTypes[0];
       const format = fileType.fileFormat;
@@ -195,7 +195,7 @@ export class S3Drive implements Contents.IDrive {
     const types = this._registry.getFileTypesForPath(s3contents.path);
     const fileType =
       types.length === 0
-        ? this._registry.getFileType('text') ?? undefined
+        ? (this._registry.getFileType('text') ?? undefined)
         : types[0];
     const mimetype = fileType.mimeTypes[0];
     const format = fileType.fileFormat;
@@ -299,7 +299,7 @@ export class S3Drive implements Contents.IDrive {
     const types = this._registry.getFileTypesForPath(s3contents.path);
     const fileType =
       types.length === 0
-        ? this._registry.getFileType('text') ?? undefined
+        ? (this._registry.getFileType('text') ?? undefined)
         : types[0];
     const mimetype = fileType.mimeTypes[0];
     const format = fileType.fileFormat;

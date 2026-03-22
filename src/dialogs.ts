@@ -102,7 +102,10 @@ class S3PathPickerWidget extends Widget {
         }
       }
 
-      if (items.filter(i => i.type === 'directory').length === 0 && path !== '') {
+      if (
+        items.filter(i => i.type === 'directory').length === 0 &&
+        path !== ''
+      ) {
         const empty = document.createElement('div');
         empty.textContent = '(no subdirectories)';
         empty.style.padding = '4px 8px';
@@ -131,10 +134,7 @@ export async function showS3PathPickerDialog(
   const result = await showDialog({
     title,
     body: picker,
-    buttons: [
-      Dialog.cancelButton(),
-      Dialog.okButton({ label: 'Select' })
-    ]
+    buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Select' })]
   });
 
   if (result.button.accept) {

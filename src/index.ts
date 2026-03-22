@@ -13,10 +13,7 @@ import {
   IFileBrowserFactory
 } from '@jupyterlab/filebrowser';
 
-import {
-  InputDialog,
-  showErrorMessage
-} from '@jupyterlab/apputils';
+import { InputDialog, showErrorMessage } from '@jupyterlab/apputils';
 
 import { S3Drive } from './contents';
 
@@ -26,10 +23,7 @@ import { minioIcon } from './icons';
 
 import * as s3 from './s3';
 
-import {
-  showS3PathPickerDialog,
-  showLocalPathInputDialog
-} from './dialogs';
+import { showS3PathPickerDialog, showLocalPathInputDialog } from './dialogs';
 
 /**
  * S3 filebrowser plugin state namespace.
@@ -177,10 +171,7 @@ function activateFileBrowser(
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        'Copy to S3 Path',
-        ''
-      );
+      const dest = await showS3PathPickerDialog('Copy to S3 Path', '');
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -206,10 +197,7 @@ function activateFileBrowser(
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        'Move to S3 Path',
-        ''
-      );
+      const dest = await showS3PathPickerDialog('Move to S3 Path', '');
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -272,10 +260,7 @@ function activateFileBrowser(
       if (!localPath) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        'Copy Local File to S3',
-        ''
-      );
+      const dest = await showS3PathPickerDialog('Copy Local File to S3', '');
       if (dest !== null) {
         const fileName = localPath.split('/').pop() || localPath;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -379,7 +364,8 @@ function activateFileBrowser(
   // Context menu item for default JupyterLab file browser -> Copy to S3
   app.contextMenu.addItem({
     command: 'minio:copy-to-s3',
-    selector: '.jp-DirListing-item:not(#minio-file-browser .jp-DirListing-item)',
+    selector:
+      '.jp-DirListing-item:not(#minio-file-browser .jp-DirListing-item)',
     rank: 100
   });
 
