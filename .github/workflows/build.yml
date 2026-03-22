@@ -34,10 +34,13 @@ jobs:
         set -eux
         jlpm run test
 
-    - name: Build the extension
+    - name: Build and install the extension
       run: |
         set -eux
-        jlpm run build
+
+        # Clean any pre-existing labextension build so hatch-jupyter-builder
+        # runs the full build during pip install
+        rm -rf jupyterlab-minio/labextension
 
         python -m pip install ".[test]"
 
