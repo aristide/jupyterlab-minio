@@ -2,6 +2,14 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 2.0.1
+
+### Fixed
+
+- Fix wheel packaging: labextension assets were missing from the installed wheel because `artifacts` was only declared for the `sdist` target. Moved `artifacts` to `[tool.hatch.build]` so it applies to all build targets, and added explicit `packages`/`exclude` under `[tool.hatch.build.targets.wheel]` to ensure labextension files are correctly placed in shared-data rather than as package files.
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 2.0.0
 
 ### Breaking Changes
@@ -53,8 +61,6 @@
 - Removed `jupyterlab-pygments` and `notebook` from dependencies
 - Removed `stylelint-config-prettier` (unnecessary with stylelint 16 + prettier 3)
 - Removed Lumino 1.x resolution overrides
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 1.1.1
 

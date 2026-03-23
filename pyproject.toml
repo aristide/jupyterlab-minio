@@ -41,9 +41,15 @@ source = "nodejs"
 [tool.hatch.metadata.hooks.nodejs]
 fields = ["description", "authors", "urls"]
 
-[tool.hatch.build.targets.sdist]
+[tool.hatch.build]
 artifacts = ["jupyterlab-minio/labextension"]
+
+[tool.hatch.build.targets.sdist]
 exclude = [".github", "binder"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["jupyterlab-minio"]
+exclude = ["jupyterlab-minio/labextension"]
 
 [tool.hatch.build.targets.wheel.shared-data]
 "jupyterlab-minio/labextension" = "share/jupyter/labextensions/jupyterlab-minio"
