@@ -2,14 +2,6 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
-## 2.0.1
-
-### Fixed
-
-- Fix wheel packaging: labextension assets were missing from the installed wheel because `artifacts` was only declared for the `sdist` target. Moved `artifacts` to `[tool.hatch.build]` so it applies to all build targets, and added explicit `packages`/`exclude` under `[tool.hatch.build.targets.wheel]` to ensure labextension files are correctly placed in shared-data rather than as package files.
-
-<!-- <END NEW CHANGELOG ENTRY> -->
-
 ## 2.0.0
 
 ### Breaking Changes
@@ -52,6 +44,7 @@
 - "Copy to S3" now correctly reads the selected file path from the default file browser
 - `S3Drive.delete()` now surfaces all backend errors, not just `DIR_NOT_EMPTY`
 - Filter input dynamically resets the file list when clearing search text
+- Fix wheel packaging: labextension assets were missing from the installed wheel because `artifacts` was only declared for the `sdist` target. Moved `artifacts` to `[tool.hatch.build]` and added explicit `packages`/`exclude` under `[tool.hatch.build.targets.wheel]` to ensure labextension files are correctly placed in shared-data.
 
 ### Removed
 
