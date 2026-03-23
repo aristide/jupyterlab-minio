@@ -45,6 +45,8 @@
 - `S3Drive.delete()` now surfaces all backend errors, not just `DIR_NOT_EMPTY`
 - Filter input dynamically resets the file list when clearing search text
 - Fix wheel packaging: labextension assets were missing from the installed wheel because `artifacts` was only declared for the `sdist` target. Moved `artifacts` to `[tool.hatch.build]` and added explicit `packages`/`exclude` under `[tool.hatch.build.targets.wheel]` to ensure labextension files are correctly placed in shared-data.
+- Fix CI: replace `jlpm playwright` with `npx playwright` for Yarn Berry compatibility
+- Fix UI integration test: check for sidebar panel registration instead of console messages to avoid temp directory and credential errors
 
 ### Removed
 

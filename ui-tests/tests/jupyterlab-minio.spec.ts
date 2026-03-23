@@ -1,19 +1,6 @@
 import { expect, test } from '@jupyterlab/galata';
 
-/**
- * Don't load JupyterLab webpage before running the tests.
- * This is required to ensure we capture all log messages.
- */
-test.use({ autoGoto: false });
-
-test('should emit an activation console message', async ({ page }) => {
-  const logs: string[] = [];
-
-  page.on('console', message => {
-    logs.push(message.text());
-  });
-
-  await page.goto();
-
-  expect(2 + 2).toBe(4);
+test('should register the minio sidebar panel', async ({ page }) => {
+  const tab = page.getByRole('tab', { name: 'Minio Browser' });
+  await expect(tab).toBeVisible({ timeout: 30000 });
 });
