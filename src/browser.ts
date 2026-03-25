@@ -28,6 +28,10 @@ import {
   newFolderIcon
 } from '@jupyterlab/ui-components';
 
+import { minioIcon } from './icons';
+
+import { t } from './i18n';
+
 import * as s3 from './s3';
 
 /**
@@ -48,14 +52,14 @@ export class S3FileBrowser extends Widget {
     // edit Config Button
     const editConfigButton = new ToolbarButton({
       icon: settingsIcon,
-      tooltip: 'Reset Your Credentials',
+      tooltip: t('toolbar.resetCredentials'),
       onClick: async () => {
         const result = await showDialog({
-          title: 'Confirmation Required',
-          body: 'You have requested to reset your credentials. Before proceeding, we would like to confirm if you intended to make this request.',
+          title: t('dialog.confirmRequired'),
+          body: t('dialog.confirmResetBody'),
           buttons: [
             Dialog.cancelButton(),
-            Dialog.okButton({ label: 'Confirm' })
+            Dialog.okButton({ label: t('dialog.confirm') })
           ]
         });
 
@@ -66,7 +70,10 @@ export class S3FileBrowser extends Widget {
               (this.layout as PanelLayout).removeWidget(browser);
               (this.layout as PanelLayout).addWidget(s3AuthenticationForm);
             } else {
-              void showErrorMessage('Credentials Reset Error', Error(message));
+              void showErrorMessage(
+                t('error.credentialsReset'),
+                Error(message)
+              );
             }
           });
         }
@@ -76,7 +83,7 @@ export class S3FileBrowser extends Widget {
     // refresh content button
     const refreshButton = new ToolbarButton({
       icon: refreshIcon,
-      tooltip: 'Refresh',
+      tooltip: t('toolbar.refresh'),
       onClick: () => {
         browser.model.refresh();
       }
@@ -85,13 +92,12 @@ export class S3FileBrowser extends Widget {
     // create bucket button
     const createBucketButton = new ToolbarButton({
       icon: addIcon,
-      tooltip: 'Create Bucket',
+      tooltip: t('toolbar.createBucket'),
       onClick: async () => {
         const result = await InputDialog.getText({
-          title: 'Create New Bucket',
-          label:
-            'Bucket name (lowercase, 3-63 chars, alphanumeric and hyphens):',
-          placeholder: 'my-bucket-name'
+          title: t('dialog.createBucket'),
+          label: t('dialog.bucketNameLabel'),
+          placeholder: t('dialog.bucketNamePlaceholder')
         });
         if (result.button.accept && result.value) {
           const name = result.value.trim();
@@ -102,14 +108,14 @@ export class S3FileBrowser extends Widget {
             const response = await s3.createBucket(name);
             if (response.error) {
               void showErrorMessage(
-                'Bucket Creation Error',
+                t('error.bucketCreation'),
                 Error(response.message)
               );
             } else {
               browser.model.refresh();
             }
           } catch (err: any) {
-            void showErrorMessage('Bucket Creation Error', err);
+            void showErrorMessage(t('error.bucketCreation'), err);
           }
         }
       }
@@ -130,8 +136,8 @@ export class S3FileBrowser extends Widget {
       const currentPath = browser.model.path.replace(/^S3:/, '');
       if (!currentPath) {
         void showErrorMessage(
-          'Upload Error',
-          Error('Please navigate into a bucket before uploading files.')
+          t('error.upload'),
+          Error(t('error.uploadNavigate'))
         );
         fileInput.value = '';
         return;
@@ -143,10 +149,10 @@ export class S3FileBrowser extends Widget {
           const filePath = currentPath + '/' + file.name;
           const response = await s3.uploadFile(filePath, base64Content);
           if (response.error) {
-            void showErrorMessage('Upload Error', Error(response.message));
+            void showErrorMessage(t('error.upload'), Error(response.message));
           }
         } catch (err: any) {
-          void showErrorMessage('Upload Error', err);
+          void showErrorMessage(t('error.upload'), err);
         }
       }
       browser.model.refresh();
@@ -155,7 +161,7 @@ export class S3FileBrowser extends Widget {
 
     const uploadButton = new ToolbarButton({
       icon: fileUploadIcon,
-      tooltip: 'Upload Files',
+      tooltip: t('toolbar.uploadFiles'),
       onClick: () => {
         fileInput.click();
       }
@@ -167,7 +173,7 @@ export class S3FileBrowser extends Widget {
     filterContainer.style.display = 'none';
     const filterInput = document.createElement('input');
     filterInput.type = 'text';
-    filterInput.placeholder = 'Filter files...';
+    filterInput.placeholder = t('toolbar.filterPlaceholder');
     filterInput.className = 'jp-S3Browser-filterInput';
     filterContainer.appendChild(filterInput);
 
@@ -186,7 +192,7 @@ export class S3FileBrowser extends Widget {
 
     const filterButton = new ToolbarButton({
       icon: filterListIcon,
-      tooltip: 'Filter Files',
+      tooltip: t('toolbar.filterFiles'),
       onClick: () => {
         const visible = filterContainer.style.display !== 'none';
         filterContainer.style.display = visible ? 'none' : 'flex';
@@ -202,20 +208,20 @@ export class S3FileBrowser extends Widget {
     // Create folder button
     const createFolderButton = new ToolbarButton({
       icon: newFolderIcon,
-      tooltip: 'Create Folder',
+      tooltip: t('toolbar.createFolder'),
       onClick: async () => {
         const currentPath = browser.model.path.replace(/^S3:/, '');
         if (!currentPath) {
           void showErrorMessage(
-            'Create Folder Error',
-            Error('Please navigate into a bucket before creating a folder.')
+            t('error.createFolder'),
+            Error(t('error.createFolderNavigate'))
           );
           return;
         }
         const result = await InputDialog.getText({
-          title: 'Create New Folder',
-          label: 'Folder name:',
-          placeholder: 'my-folder'
+          title: t('dialog.createFolder'),
+          label: t('dialog.folderNameLabel'),
+          placeholder: t('dialog.folderNamePlaceholder')
         });
         if (result.button.accept && result.value) {
           const name = result.value.trim();
@@ -226,14 +232,14 @@ export class S3FileBrowser extends Widget {
             const response = await s3.createDirectory(currentPath + '/' + name);
             if ((response as any).error) {
               void showErrorMessage(
-                'Create Folder Error',
+                t('error.createFolder'),
                 Error((response as any).message)
               );
             } else {
               browser.model.refresh();
             }
           } catch (err: any) {
-            void showErrorMessage('Create Folder Error', err);
+            void showErrorMessage(t('error.createFolder'), err);
           }
         }
       }
@@ -280,14 +286,11 @@ export class S3FileBrowser extends Widget {
           } else {
             let errorMessage = data.message;
             if (errorMessage.includes('InvalidAccessKeyId')) {
-              errorMessage = 'The access key ID you entered was invalid.';
+              errorMessage = t('error.invalidAccessKey');
             } else if (errorMessage.includes('SignatureDoesNotMatch')) {
-              errorMessage = 'The secret access key you entered was invalid';
+              errorMessage = t('error.invalidSecretKey');
             }
-            void showErrorMessage(
-              'S3 Authentication Error',
-              Error(errorMessage)
-            );
+            void showErrorMessage(t('error.s3Auth'), Error(errorMessage));
           }
         });
       });
@@ -327,71 +330,105 @@ namespace Private {
     const container = document.createElement('div');
     container.className = 'minio-form';
 
-    const title = document.createElement('h4');
-    title.textContent = 'Minio Object Storage Browser';
-    container.appendChild(title);
+    // Header section
+    const header = document.createElement('div');
+    header.className = 'minio-form-header';
 
-    const description = document.createElement('div');
-    description.textContent = 'This extension allows you to browse Minio';
-    container.appendChild(description);
+    const iconContainer = document.createElement('div');
+    iconContainer.className = 'minio-form-header-icon';
+    const iconEl = minioIcon.element({ height: '36px', width: '36px' });
+    iconContainer.appendChild(iconEl);
+    header.appendChild(iconContainer);
 
-    container.appendChild(document.createElement('br'));
+    const title = document.createElement('h3');
+    title.className = 'minio-form-title';
+    title.textContent = t('auth.title');
+    header.appendChild(title);
 
+    const description = document.createElement('p');
+    description.className = 'minio-form-description';
+    description.textContent = t('auth.description');
+    header.appendChild(description);
+
+    container.appendChild(header);
+
+    // Divider
+    const divider = document.createElement('hr');
+    divider.className = 'minio-form-divider';
+    container.appendChild(divider);
+
+    // Form
     const form = document.createElement('form');
     form.id = 'minio-form';
     form.method = 'post';
 
+    const fields = document.createElement('div');
+    fields.className = 'minio-form-fields';
+
     // Endpoint URL field
-    const pUrl = document.createElement('p');
+    const groupUrl = document.createElement('div');
+    groupUrl.className = 'minio-form-group';
     const labelUrl = document.createElement('label');
-    labelUrl.textContent = 'Endpoint URL';
-    pUrl.appendChild(labelUrl);
-    pUrl.appendChild(document.createElement('br'));
+    labelUrl.className = 'minio-form-label';
+    labelUrl.htmlFor = 'minio-url';
+    labelUrl.textContent = t('auth.endpointUrl');
+    groupUrl.appendChild(labelUrl);
     const inputUrl = document.createElement('input');
+    inputUrl.className = 'minio-form-input';
+    inputUrl.id = 'minio-url';
     inputUrl.type = 'url';
     inputUrl.name = 'url';
-    pUrl.appendChild(inputUrl);
-    form.appendChild(pUrl);
-
-    form.appendChild(document.createElement('br'));
+    inputUrl.placeholder = t('auth.placeholderUrl');
+    groupUrl.appendChild(inputUrl);
+    fields.appendChild(groupUrl);
 
     // Access Key ID field
-    const pAccess = document.createElement('p');
+    const groupAccess = document.createElement('div');
+    groupAccess.className = 'minio-form-group';
     const labelAccess = document.createElement('label');
-    labelAccess.textContent = 'Access Key ID';
-    pAccess.appendChild(labelAccess);
-    pAccess.appendChild(document.createElement('br'));
+    labelAccess.className = 'minio-form-label';
+    labelAccess.htmlFor = 'minio-access-key';
+    labelAccess.textContent = t('auth.accessKey');
+    groupAccess.appendChild(labelAccess);
     const inputAccess = document.createElement('input');
+    inputAccess.className = 'minio-form-input';
+    inputAccess.id = 'minio-access-key';
     inputAccess.type = 'text';
     inputAccess.name = 'accessKey';
-    pAccess.appendChild(inputAccess);
-    form.appendChild(pAccess);
-
-    form.appendChild(document.createElement('br'));
+    inputAccess.placeholder = t('auth.placeholderAccessKey');
+    groupAccess.appendChild(inputAccess);
+    fields.appendChild(groupAccess);
 
     // Secret Access Key field
-    const pSecret = document.createElement('p');
+    const groupSecret = document.createElement('div');
+    groupSecret.className = 'minio-form-group';
     const labelSecret = document.createElement('label');
-    labelSecret.textContent = 'Secret Access Key';
-    pSecret.appendChild(labelSecret);
-    pSecret.appendChild(document.createElement('br'));
+    labelSecret.className = 'minio-form-label';
+    labelSecret.htmlFor = 'minio-secret-key';
+    labelSecret.textContent = t('auth.secretKey');
+    groupSecret.appendChild(labelSecret);
     const inputSecret = document.createElement('input');
+    inputSecret.className = 'minio-form-input';
+    inputSecret.id = 'minio-secret-key';
     inputSecret.type = 'password';
     inputSecret.name = 'secretKey';
-    pSecret.appendChild(inputSecret);
-    form.appendChild(pSecret);
+    inputSecret.placeholder = t('auth.placeholderSecretKey');
+    groupSecret.appendChild(inputSecret);
+    fields.appendChild(groupSecret);
 
+    form.appendChild(fields);
     container.appendChild(form);
-    container.appendChild(document.createElement('br'));
 
-    const pButton = document.createElement('p');
-    pButton.className = 's3-connect';
+    // Actions
+    const actions = document.createElement('div');
+    actions.className = 'minio-form-actions';
     const button = document.createElement('button');
+    button.type = 'button';
     button.onclick = onSubmit;
-    button.className = 'jp-mod-accept jp-mod-styled';
-    button.textContent = 'Connect';
-    pButton.appendChild(button);
-    container.appendChild(pButton);
+    button.className = 'minio-form-button jp-mod-accept jp-mod-styled';
+    button.textContent = t('auth.connect');
+    actions.appendChild(button);
+    container.appendChild(actions);
 
     return container;
   }

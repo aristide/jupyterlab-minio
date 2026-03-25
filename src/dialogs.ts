@@ -2,6 +2,8 @@ import { Widget } from '@lumino/widgets';
 
 import { Dialog, showDialog, InputDialog } from '@jupyterlab/apputils';
 
+import { t } from './i18n';
+
 import * as s3 from './s3';
 
 /**
@@ -21,7 +23,7 @@ class S3PathPickerWidget extends Widget {
 
     // Path input
     const label = document.createElement('label');
-    label.textContent = 'S3 Path:';
+    label.textContent = t('dialog.s3Path');
     container.appendChild(label);
 
     this._pathInput = document.createElement('input');
@@ -64,7 +66,7 @@ class S3PathPickerWidget extends Widget {
       // Add parent navigation if not at root
       if (path !== '') {
         const parentItem = document.createElement('div');
-        parentItem.textContent = '.. (parent)';
+        parentItem.textContent = t('dialog.parentDir');
         parentItem.style.cursor = 'pointer';
         parentItem.style.padding = '4px 8px';
         parentItem.style.fontStyle = 'italic';
@@ -107,7 +109,7 @@ class S3PathPickerWidget extends Widget {
         path !== ''
       ) {
         const empty = document.createElement('div');
-        empty.textContent = '(no subdirectories)';
+        empty.textContent = t('dialog.noSubdirectories');
         empty.style.padding = '4px 8px';
         empty.style.fontStyle = 'italic';
         empty.style.color = 'var(--jp-ui-font-color2)';
@@ -115,7 +117,7 @@ class S3PathPickerWidget extends Widget {
       }
     } catch (err) {
       const errEl = document.createElement('div');
-      errEl.textContent = 'Error loading path';
+      errEl.textContent = t('error.loadingPath');
       errEl.style.color = 'var(--jp-error-color1)';
       this._listContainer.appendChild(errEl);
     }
@@ -134,7 +136,10 @@ export async function showS3PathPickerDialog(
   const result = await showDialog({
     title,
     body: picker,
-    buttons: [Dialog.cancelButton(), Dialog.okButton({ label: 'Select' })]
+    buttons: [
+      Dialog.cancelButton(),
+      Dialog.okButton({ label: t('dialog.select') })
+    ]
   });
 
   if (result.button.accept) {
@@ -152,7 +157,7 @@ export async function showLocalPathInputDialog(
 ): Promise<string | null> {
   const result = await InputDialog.getText({
     title,
-    label: 'Local path (relative to Jupyter root):',
+    label: t('dialog.localPathLabel'),
     placeholder: defaultPath || 'path/to/file.txt'
   });
 

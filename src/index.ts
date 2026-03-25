@@ -15,11 +15,15 @@ import {
 
 import { InputDialog, showErrorMessage } from '@jupyterlab/apputils';
 
+import { ITranslator } from '@jupyterlab/translation';
+
 import { S3Drive } from './contents';
 
 import { S3FileBrowser } from './browser';
 
 import { minioIcon } from './icons';
+
+import { t, setLocale } from './i18n';
 
 import * as s3 from './s3';
 
@@ -46,7 +50,8 @@ const fileBrowserPlugin: JupyterFrontEndPlugin<void> = {
     IDocumentManager,
     IFileBrowserFactory,
     ILayoutRestorer,
-    ISettingRegistry
+    ISettingRegistry,
+    ITranslator
   ],
   activate: activateFileBrowser
 };
@@ -60,8 +65,17 @@ function activateFileBrowser(
   manager: IDocumentManager,
   factory: IFileBrowserFactory,
   restorer: ILayoutRestorer,
-  settingRegistry: ISettingRegistry
+  settingRegistry: ISettingRegistry,
+  translator: ITranslator | null
 ): void {
+  // Set locale based on JupyterLab's language setting
+  if (translator) {
+    const langCode = translator.languageCode;
+    if (langCode && langCode !== 'en') {
+      setLocale(langCode);
+    }
+  }
+
   // Add the S3 backend to the contents manager.
   const drive = new S3Drive(app.docRegistry);
   manager.services.contents.addDrive(drive);
@@ -75,7 +89,7 @@ function activateFileBrowser(
   const s3Browser = new S3FileBrowser(browser, drive, manager);
 
   s3Browser.title.icon = minioIcon;
-  s3Browser.title.caption = 'Minio Browser';
+  s3Browser.title.caption = t('sidebar.caption');
 
   s3Browser.id = 'minio-file-browser';
 
@@ -102,13 +116,13 @@ function activateFileBrowser(
   // --- Phase 1: Bucket commands ---
 
   app.commands.addCommand('minio:create-bucket', {
-    label: 'Create Bucket',
+    label: t('command.createBucket'),
     isVisible: () => getCurrentS3Path() === '',
     execute: async () => {
       const result = await InputDialog.getText({
-        title: 'Create New Bucket',
-        label: 'Bucket name (lowercase, 3-63 chars, alphanumeric and hyphens):',
-        placeholder: 'my-bucket-name'
+        title: t('dialog.createBucket'),
+        label: t('dialog.bucketNameLabel'),
+        placeholder: t('dialog.bucketNamePlaceholder')
       });
       if (result.button.accept && result.value) {
         const name = result.value.trim();
@@ -119,21 +133,21 @@ function activateFileBrowser(
           const response = await s3.createBucket(name);
           if (response.error) {
             void showErrorMessage(
-              'Bucket Creation Error',
+              t('error.bucketCreation'),
               Error(response.message)
             );
           } else {
             browser.model.refresh();
           }
         } catch (err: any) {
-          void showErrorMessage('Bucket Creation Error', err);
+          void showErrorMessage(t('error.bucketCreation'), err);
         }
       }
     }
   });
 
   app.commands.addCommand('minio:delete-bucket', {
-    label: 'Delete Bucket',
+    label: t('command.deleteBucket'),
     isVisible: () => {
       const selected = getSelectedS3Path();
       // A bucket path has no slash
@@ -149,14 +163,14 @@ function activateFileBrowser(
         const response = await s3.deleteBucket(bucketName);
         if (response.error) {
           void showErrorMessage(
-            'Bucket Deletion Error',
+            t('error.bucketDeletion'),
             Error(response.message)
           );
         } else {
           browser.model.refresh();
         }
       } catch (err: any) {
-        void showErrorMessage('Bucket Deletion Error', err);
+        void showErrorMessage(t('error.bucketDeletion'), err);
       }
     }
   });
@@ -164,52 +178,58 @@ function activateFileBrowser(
   // --- Phase 2: Cross-bucket copy/move commands ---
 
   app.commands.addCommand('minio:copy-to-path', {
-    label: 'Copy to S3 Path...',
+    label: t('command.copyToPath'),
     isVisible: () => getSelectedS3Path() !== null,
     execute: async () => {
       const selected = getSelectedS3Path();
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog('Copy to S3 Path', '');
+      const dest = await showS3PathPickerDialog(
+        t('dialog.copyToS3Path'),
+        ''
+      );
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
         try {
           const response: any = await s3.copyFile(selected, destPath);
           if (response.error) {
-            void showErrorMessage('Copy Error', Error(response.message));
+            void showErrorMessage(t('error.copy'), Error(response.message));
           } else {
             browser.model.refresh();
           }
         } catch (err: any) {
-          void showErrorMessage('Copy Error', err);
+          void showErrorMessage(t('error.copy'), err);
         }
       }
     }
   });
 
   app.commands.addCommand('minio:move-to-path', {
-    label: 'Move to S3 Path...',
+    label: t('command.moveToPath'),
     isVisible: () => getSelectedS3Path() !== null,
     execute: async () => {
       const selected = getSelectedS3Path();
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog('Move to S3 Path', '');
+      const dest = await showS3PathPickerDialog(
+        t('dialog.moveToS3Path'),
+        ''
+      );
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
         try {
           const response: any = await s3.moveFile(selected, destPath);
           if (response.error) {
-            void showErrorMessage('Move Error', Error(response.message));
+            void showErrorMessage(t('error.move'), Error(response.message));
           } else {
             browser.model.refresh();
           }
         } catch (err: any) {
-          void showErrorMessage('Move Error', err);
+          void showErrorMessage(t('error.move'), err);
         }
       }
     }
@@ -218,7 +238,7 @@ function activateFileBrowser(
   // --- Phase 3: S3 <-> Local transfer commands ---
 
   app.commands.addCommand('minio:copy-to-local', {
-    label: 'Copy to Local Filesystem...',
+    label: t('command.copyToLocal'),
     isVisible: () => getSelectedS3Path() !== null,
     execute: async () => {
       const selected = getSelectedS3Path();
@@ -227,7 +247,7 @@ function activateFileBrowser(
       }
       const fileName = selected.split('/').pop() || selected;
       const localPath = await showLocalPathInputDialog(
-        'Copy S3 File to Local',
+        t('dialog.copyS3ToLocal'),
         fileName
       );
       if (localPath) {
@@ -239,17 +259,20 @@ function activateFileBrowser(
             localPath
           );
           if (response.error) {
-            void showErrorMessage('Transfer Error', Error(response.message));
+            void showErrorMessage(
+              t('error.transfer'),
+              Error(response.message)
+            );
           }
         } catch (err: any) {
-          void showErrorMessage('Transfer Error', err);
+          void showErrorMessage(t('error.transfer'), err);
         }
       }
     }
   });
 
   app.commands.addCommand('minio:copy-to-s3', {
-    label: 'Copy to S3...',
+    label: t('command.copyToS3'),
     isVisible: () => defaultBrowser !== null,
     execute: async () => {
       if (!defaultBrowser) {
@@ -260,7 +283,10 @@ function activateFileBrowser(
       if (!localPath) {
         return;
       }
-      const dest = await showS3PathPickerDialog('Copy Local File to S3', '');
+      const dest = await showS3PathPickerDialog(
+        t('dialog.copyLocalToS3'),
+        ''
+      );
       if (dest !== null) {
         const fileName = localPath.split('/').pop() || localPath;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -272,10 +298,13 @@ function activateFileBrowser(
             destPath
           );
           if (response.error) {
-            void showErrorMessage('Transfer Error', Error(response.message));
+            void showErrorMessage(
+              t('error.transfer'),
+              Error(response.message)
+            );
           }
         } catch (err: any) {
-          void showErrorMessage('Transfer Error', err);
+          void showErrorMessage(t('error.transfer'), err);
         }
       }
     }
@@ -284,7 +313,7 @@ function activateFileBrowser(
   // --- Delete from S3 command ---
 
   app.commands.addCommand('minio:delete', {
-    label: 'Delete from S3',
+    label: t('command.deleteFromS3'),
     isVisible: () => getSelectedS3Path() !== null,
     execute: async () => {
       const items: string[] = [];
@@ -301,8 +330,8 @@ function activateFileBrowser(
       }
       const names = items.map(p => p.split('/').pop() || p).join(', ');
       const result = await InputDialog.getBoolean({
-        title: 'Delete from S3',
-        label: `Are you sure you want to delete: ${names}?`
+        title: t('dialog.deleteFromS3'),
+        label: `${t('dialog.deleteConfirm')} ${names} ?`
       });
       if (result.button.accept && result.value) {
         for (const itemPath of items) {
@@ -310,12 +339,15 @@ function activateFileBrowser(
             const response = await s3.deleteFile(itemPath);
             if (response.error) {
               void showErrorMessage(
-                'Delete Error',
-                Error(response.message || `Failed to delete ${itemPath}`)
+                t('error.delete'),
+                Error(
+                  response.message ||
+                    `${t('error.deleteFailed')} ${itemPath}`
+                )
               );
             }
           } catch (err: any) {
-            void showErrorMessage('Delete Error', err);
+            void showErrorMessage(t('error.delete'), err);
           }
         }
         browser.model.refresh();
