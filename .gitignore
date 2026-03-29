@@ -137,3 +137,6 @@ notebooks/*
 
 # Error logs
 errors/
+scope/
+enpropagation/
+*.docx

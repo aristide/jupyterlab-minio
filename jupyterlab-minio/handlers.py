@@ -12,7 +12,7 @@ import tornado
 from botocore.exceptions import NoCredentialsError
 from jupyter_server.base.handlers import APIHandler
 from jupyter_server.utils import url_path_join
-from .utils import EnvironmentManager, MinIOConfigHelper
+from .utils import MinIOConfigHelper
 
 
 ########################### Custom logging
@@ -39,11 +39,11 @@ handler.setFormatter(CustomFormatter(
 
 logger.addHandler(handler)
 
+import time as _time
+
 ########################### Custom helpers
 
 minio_config_helper = MinIOConfigHelper()
-# bash_helper = BashrcEnvManager()
-env_manager = EnvironmentManager()
 
 ########################### Custom exceptions
 class DirectoryNotEmptyException(Exception):
@@ -237,21 +237,31 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
         Checks if the user is already authenticated
         against an s3 instance.
         """
-        
+        t_start = _time.time()
+        logger.info("[minio-perf] GET /auth START")
+
         authenticated = False
+        t0 = _time.time()
+        logger.info("[minio-perf] has_minio_role_access START")
         if has_minio_role_access():
             authenticated = True
+        logger.info("[minio-perf] has_minio_role_access END (%.0fms) result=%s",
+                     (_time.time() - t0) * 1000, authenticated)
 
         if not authenticated:
 
             try:
                 config = self.config
                 if config.url and config.accessKey and config.secretKey:
+                    t1 = _time.time()
+                    logger.info("[minio-perf] test_minio_credentials START")
                     test_minio_credentials(
                         config.url,
                         config.accessKey,
                         config.secretKey,
                     )
+                    logger.info("[minio-perf] test_minio_credentials END (%.0fms)",
+                                 (_time.time() - t1) * 1000)
                     logger.debug("...successfully authenticated")
 
                     # If no exceptions were encountered during testS3Credentials,
@@ -265,19 +275,9 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
                 logger.debug("...failed to authenticate")
                 logger.debug(err)
 
-        os.environ["MYVAR"] = self.config.url
-        
-        if authenticated:
-            # update environment variable with the new credentials
-            env_manager.update_env_var("MINIO_ENDPOINT", self.config.url)
-            env_manager.update_env_var("MINIO_ACCESS_KEY", self.config.accessKey)
-            env_manager.update_env_var("MINIO_SECRET_KEY", self.config.secretKey)
-        else:
-            # delete minio environment variable
-            env_manager.remove_env_var("MINIO_ENDPOINT")
-            env_manager.remove_env_var("MINIO_ACCESS_KEY")
-            env_manager.remove_env_var("MINIO_SECRET_KEY")
-        
+        logger.info("[minio-perf] GET /auth END (%.0fms) authenticated=%s",
+                     (_time.time() - t_start) * 1000, authenticated)
+
         self.finish(json.dumps({"authenticated": authenticated}))
 
     @tornado.web.authenticated
@@ -298,13 +298,16 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
             self.config.accessKey = accessKey
             self.config.secretKey = secretKey
             
-            # update minio config gile
+            # update minio config file
             minio_config_helper.update_alias(url, accessKey, secretKey)
-            # update environment variable with the new credentials
-            env_manager.update_env_var("MINIO_ENDPOINT", self.config.url)
-            env_manager.update_env_var("MINIO_ACCESS_KEY", self.config.accessKey)
-            env_manager.update_env_var("MINIO_SECRET_KEY", self.config.secretKey)
-            
+            # persist to shared env file for kernel/terminal startup hooks
+            env_mgr = self.settings.get("minio_env_manager")
+            if env_mgr:
+                env_mgr.write(url, accessKey, secretKey)
+                server_app = self.settings.get("jupyter_server_app")
+                if server_app:
+                    env_mgr.patch_running_kernels(server_app)
+
             self.finish(json.dumps({"success": True}))
         except Exception as err:
             logger.error("unable to authenticate using credentials {}".format(str(self.request.body)))
@@ -323,11 +326,14 @@ class AuthRouteHandler(CustomAPIHandler):  # pylint: disable=abstract-method
             self.config.secretKey = ""
 
             minio_config_helper.remove_config_path()
-            # delete minio environment variable
-            env_manager.remove_env_var("MINIO_ENDPOINT")
-            env_manager.remove_env_var("MINIO_ACCESS_KEY")
-            env_manager.remove_env_var("MINIO_SECRET_KEY")
-            
+            # clear shared env file so startup hooks unset the vars
+            env_mgr = self.settings.get("minio_env_manager")
+            if env_mgr:
+                env_mgr.clear()
+                server_app = self.settings.get("jupyter_server_app")
+                if server_app:
+                    env_mgr.patch_running_kernels(server_app)
+
             self.finish(json.dumps({"success": True}))
         except Exception as err:
             logger.error("unable reconfigure using credentials {}".format(str(err)))
@@ -348,11 +354,17 @@ class S3PathRouteHandler(CustomAPIHandler):
         Takes a path and returns lists of files/objects
         and directories/prefixes based on the path.
         """
+        t_start = _time.time()
         path = path[1:]
+        logger.info("[minio-perf] GET /files/%s START", path)
 
         try:
             if not self.s3fs:
+                t0 = _time.time()
+                logger.info("[minio-perf] create_s3fs START")
                 self.s3fs = create_s3fs(self.config)
+                logger.info("[minio-perf] create_s3fs END (%.0fms)",
+                             (_time.time() - t0) * 1000)
 
             self.s3fs.invalidate_cache()
 
@@ -380,6 +392,8 @@ class S3PathRouteHandler(CustomAPIHandler):
             logger.error("Exception encountered while reading Minio resources {}: {}".format(path, e))
             result = {"error": 500, "message": str(e)}
 
+        logger.info("[minio-perf] GET /files/%s END (%.0fms)",
+                     path, (_time.time() - t_start) * 1000)
         self.finish(json.dumps(result))
 
     @tornado.web.authenticated
@@ -704,6 +718,17 @@ def _transfer_local_to_s3_recursive(s3filesystem, local_path, s3_path):
                     sf.write(lf.read())
 
 
+class ConfigRouteHandler(APIHandler):
+    """
+    Returns extension runtime configuration flags.
+    """
+
+    @tornado.web.authenticated
+    def get(self):
+        disable_reset = os.environ.get("MINIO_DISABLE_RESET", "").lower() == "true"
+        self.finish(json.dumps({"disable_reset": disable_reset}))
+
+
 ########################### Setup lab handler
 def setup_handlers(web_app):
     host_pattern = ".*"
@@ -714,5 +739,6 @@ def setup_handlers(web_app):
         (url_path_join(base_url, "jupyterlab-minio", "files(.*)"), S3PathRouteHandler),
         (url_path_join(base_url, "jupyterlab-minio", "buckets(.*)"), BucketRouteHandler),
         (url_path_join(base_url, "jupyterlab-minio", "transfer(.*)"), TransferRouteHandler),
+        (url_path_join(base_url, "jupyterlab-minio", "config"), ConfigRouteHandler),
     ]
     web_app.add_handlers(host_pattern, handlers)

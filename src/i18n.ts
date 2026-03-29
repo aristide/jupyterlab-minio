@@ -74,26 +74,31 @@ const translations: Record<string, Record<string, string>> = {
       'Please navigate into a bucket before creating a folder.',
     'error.s3Auth': 'S3 Authentication Error',
     'error.invalidAccessKey': 'The access key ID you entered was invalid.',
-    'error.invalidSecretKey':
-      'The secret access key you entered was invalid.',
+    'error.invalidSecretKey': 'The secret access key you entered was invalid.',
     'error.copy': 'Copy Error',
     'error.move': 'Move Error',
     'error.transfer': 'Transfer Error',
     'error.delete': 'Delete Error',
     'error.deleteFailed': 'Failed to delete',
-    'error.loadingPath': 'Error loading path'
+    'error.loadingPath': 'Error loading path',
+
+    // Notifications
+    'notification.credentialsUpdated':
+      'MinIO credentials updated. Restarting kernels and terminals…',
+    'notification.credentialsReset':
+      'MinIO credentials reset. Restarting kernels and terminals…'
   },
   fr: {
     // Auth form
     'auth.title': 'Stockage Objet MinIO',
     'auth.description':
       'Connectez-vous a votre instance MinIO pour parcourir et gerer vos objets.',
-    'auth.endpointUrl': 'URL du point d\'acces',
-    'auth.accessKey': 'Identifiant de cle d\'acces',
-    'auth.secretKey': 'Cle d\'acces secrete',
+    'auth.endpointUrl': "URL du point d'acces",
+    'auth.accessKey': "Identifiant de cle d'acces",
+    'auth.secretKey': "Cle d'acces secrete",
     'auth.connect': 'Se connecter',
     'auth.placeholderUrl': 'https://play.min.io',
-    'auth.placeholderAccessKey': 'Entrez votre cle d\'acces',
+    'auth.placeholderAccessKey': "Entrez votre cle d'acces",
     'auth.placeholderSecretKey': 'Entrez votre cle secrete',
 
     // Sidebar
@@ -121,14 +126,12 @@ const translations: Record<string, Record<string, string>> = {
     'dialog.folderNameLabel': 'Nom du dossier :',
     'dialog.folderNamePlaceholder': 'mon-dossier',
     'dialog.deleteFromS3': 'Supprimer de S3',
-    'dialog.deleteConfirm':
-      'Etes-vous sur de vouloir supprimer :',
+    'dialog.deleteConfirm': 'Etes-vous sur de vouloir supprimer :',
     'dialog.s3Path': 'Chemin S3 :',
     'dialog.parentDir': '.. (parent)',
     'dialog.noSubdirectories': '(aucun sous-repertoire)',
     'dialog.select': 'Selectionner',
-    'dialog.localPathLabel':
-      'Chemin local (relatif a la racine Jupyter) :',
+    'dialog.localPathLabel': 'Chemin local (relatif a la racine Jupyter) :',
     'dialog.copyToS3Path': 'Copier vers un chemin S3',
     'dialog.moveToS3Path': 'Deplacer vers un chemin S3',
     'dialog.copyS3ToLocal': 'Copier un fichier S3 en local',
@@ -144,8 +147,7 @@ const translations: Record<string, Record<string, string>> = {
     'command.deleteFromS3': 'Supprimer de S3',
 
     // Error messages
-    'error.credentialsReset':
-      'Erreur de reinitialisation des identifiants',
+    'error.credentialsReset': 'Erreur de reinitialisation des identifiants',
     'error.bucketCreation': 'Erreur de creation du compartiment',
     'error.bucketDeletion': 'Erreur de suppression du compartiment',
     'error.upload': 'Erreur de telechargement',
@@ -154,17 +156,22 @@ const translations: Record<string, Record<string, string>> = {
     'error.createFolder': 'Erreur de creation du dossier',
     'error.createFolderNavigate':
       'Veuillez naviguer dans un compartiment avant de creer un dossier.',
-    'error.s3Auth': 'Erreur d\'authentification S3',
+    'error.s3Auth': "Erreur d'authentification S3",
     'error.invalidAccessKey':
-      'L\'identifiant de cle d\'acces saisi est invalide.',
-    'error.invalidSecretKey':
-      'La cle d\'acces secrete saisie est invalide.',
+      "L'identifiant de cle d'acces saisi est invalide.",
+    'error.invalidSecretKey': "La cle d'acces secrete saisie est invalide.",
     'error.copy': 'Erreur de copie',
     'error.move': 'Erreur de deplacement',
     'error.transfer': 'Erreur de transfert',
     'error.delete': 'Erreur de suppression',
     'error.deleteFailed': 'Echec de la suppression de',
-    'error.loadingPath': 'Erreur de chargement du chemin'
+    'error.loadingPath': 'Erreur de chargement du chemin',
+
+    // Notifications
+    'notification.credentialsUpdated':
+      'Identifiants MinIO mis a jour. Redemarrage des noyaux et terminaux…',
+    'notification.credentialsReset':
+      'Identifiants MinIO reinitialises. Redemarrage des noyaux et terminaux…'
   }
 };
 

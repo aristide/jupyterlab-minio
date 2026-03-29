@@ -102,7 +102,9 @@
   font-family: var(--jp-ui-font-family);
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .minio-form-input::placeholder {
@@ -111,7 +113,8 @@
 
 .minio-form-input:focus {
   border-color: var(--jp-brand-color1);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--jp-brand-color1) 20%, transparent);
+  box-shadow: 0 0 0 2px
+    color-mix(in srgb, var(--jp-brand-color1) 20%, transparent);
 }
 
 .minio-form-actions {
@@ -126,11 +129,13 @@
   font-family: var(--jp-ui-font-family);
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .minio-form-button:hover {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
 }
 
 .jp-S3Browser {

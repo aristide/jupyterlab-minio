@@ -6,7 +6,7 @@ import { S3Drive } from './contents';
 
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
-import { ServerConnection } from '@jupyterlab/services';
+import { ServerConnection, ServiceManager } from '@jupyterlab/services';
 
 import { URLExt } from '@jupyterlab/coreutils';
 
@@ -34,6 +34,8 @@ import { t } from './i18n';
 
 import * as s3 from './s3';
 
+import { restartAllWithNotification } from './env-sync';
+
 /**
  * Widget for authenticating against
  * an s3 object storage instance.
@@ -44,8 +46,16 @@ let s3AuthenticationForm: any | undefined | null;
  * Widget for hosting the S3 filebrowser.
  */
 export class S3FileBrowser extends Widget {
-  constructor(browser: FileBrowser, drive: S3Drive, manager: IDocumentManager) {
+  private _serviceManager: ServiceManager.IManager;
+
+  constructor(
+    browser: FileBrowser,
+    drive: S3Drive,
+    manager: IDocumentManager,
+    serviceManager: ServiceManager.IManager
+  ) {
     super();
+    this._serviceManager = serviceManager;
     this.addClass('jp-S3Browser');
     this.layout = new PanelLayout();
 
@@ -69,6 +79,7 @@ export class S3FileBrowser extends Widget {
             if (success) {
               (this.layout as PanelLayout).removeWidget(browser);
               (this.layout as PanelLayout).addWidget(s3AuthenticationForm);
+              restartAllWithNotification(this._serviceManager, 'reset');
             } else {
               void showErrorMessage(
                 t('error.credentialsReset'),
@@ -252,6 +263,17 @@ export class S3FileBrowser extends Widget {
     browser.toolbar.insertItem(10, 'filebrowser:refresh', refreshButton);
     browser.toolbar.insertItem(12, 'setting', editConfigButton);
 
+    // Conditionally hide the reset button based on MINIO_DISABLE_RESET
+    s3.getConfig()
+      .then(config => {
+        if (config.disable_reset) {
+          editConfigButton.hide();
+        }
+      })
+      .catch(() => {
+        // Config endpoint unavailable — keep default (button visible)
+      });
+
     // Insert filter widget between toolbar and listing
     browser.toolbar.node.parentElement?.insertBefore(
       filterWidget.node,
@@ -283,6 +305,7 @@ export class S3FileBrowser extends Widget {
             (this.layout as PanelLayout).removeWidget(s3AuthenticationForm);
             (this.layout as PanelLayout).addWidget(browser);
             browser.model.refresh();
+            restartAllWithNotification(this._serviceManager, 'updated');
           } else {
             let errorMessage = data.message;
             if (errorMessage.includes('InvalidAccessKeyId')) {
@@ -301,16 +324,30 @@ export class S3FileBrowser extends Widget {
      * Render the browser if they don't,
      * render the auth widget if they do.
      */
-    Private.checkIfAuthenicated().then(authenticated => {
+    const authStart = performance.now();
+    console.log('[minio] checkIfAuthenticated START');
+    Private.checkIfAuthenicated().then(result => {
+      console.log(
+        '[minio] checkIfAuthenticated END (%dms) authenticated=%s',
+        performance.now() - authStart,
+        result.authenticated
+      );
       s3AuthenticationForm = new Widget({
         node: Private.createS3AuthenticationForm(s3AuthenticationFormSubmit)
       });
 
-      if (authenticated) {
+      if (result.authenticated) {
         (this.layout as PanelLayout).addWidget(browser);
         // not sure why this timeout is necessary
         setTimeout(() => {
-          browser.model.refresh();
+          const refreshStart = performance.now();
+          console.log('[minio] browser.model.refresh START');
+          browser.model.refresh().then(() => {
+            console.log(
+              '[minio] browser.model.refresh END (%dms)',
+              performance.now() - refreshStart
+            );
+          });
         }, 1000);
       } else {
         (this.layout as PanelLayout).addWidget(s3AuthenticationForm);
@@ -437,7 +474,9 @@ namespace Private {
    * Returns true if the user is already authenticated
    * against an s3 object storage instance.
    */
-  export function checkIfAuthenicated(): Promise<boolean> {
+  export function checkIfAuthenicated(): Promise<{
+    authenticated: boolean;
+  }> {
     return new Promise((resolve, reject) => {
       const settings = ServerConnection.makeSettings();
       ServerConnection.makeRequest(
@@ -448,7 +487,9 @@ namespace Private {
         settings
       ).then(response => {
         response.json().then(res => {
-          resolve(res.authenticated);
+          resolve({
+            authenticated: res.authenticated
+          });
         });
       });
     });

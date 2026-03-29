@@ -110,10 +110,6 @@ pip install -e ".[test]"
 # Link the development version of the extension with JupyterLab
 jupyter labextension develop . --overwrite
 
-# Install the server extension config (not deployed automatically in dev mode)
-export JUPYTER_SYS_CONFIG=$(python -c "import sysconfig, os; print(os.path.join(sysconfig.get_path('data'), 'etc', 'jupyter'))")
-cp jupyter-config/server-config/jupyterlab-minio.json "$JUPYTER_SYS_CONFIG/jupyter_server_config.d/"
-
 # Enable the server extension
 jupyter server extension enable jupyterlab-minio
 

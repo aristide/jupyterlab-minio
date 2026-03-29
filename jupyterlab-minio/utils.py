@@ -41,24 +41,6 @@ class JupyterLabS3(Configurable):
         return self.config.to_dict()
     
 
-class EnvironmentManager:
-    
-    def update_env_var(self, var_name, var_value):
-        """Add a new environment variable or update its value if it exists."""
-        os.environ[var_name] = var_value
-
-
-    def remove_env_var(self, var_name):
-        """Remove an environment variable if it exists."""
-        if var_name in os.environ:
-            del os.environ[var_name]
-
-
-    def get_env_var(self, var_name):
-        """Retrieve the value of an environment variable."""
-        return os.environ.get(var_name, None)
-
-
 class MinIOConfigHelper:
     """
     A helper class to add or update aliases in the MinIO configuration JSON file.

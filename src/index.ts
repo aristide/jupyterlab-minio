@@ -68,25 +68,47 @@ function activateFileBrowser(
   settingRegistry: ISettingRegistry,
   translator: ITranslator | null
 ): void {
+  const t0 = performance.now();
+  console.log('[minio] activate START');
+
   // Set locale based on JupyterLab's language setting
   if (translator) {
     const langCode = translator.languageCode;
     if (langCode && langCode !== 'en') {
-      setLocale(langCode);
+      // Handle full locale codes like "fr_FR" or "fr-FR" by extracting the base language
+      const baseLang = langCode.split(/[-_]/)[0];
+      setLocale(baseLang);
     }
   }
 
   // Add the S3 backend to the contents manager.
   const drive = new S3Drive(app.docRegistry);
+  console.log('[minio] addDrive START +%dms', performance.now() - t0);
   manager.services.contents.addDrive(drive);
+  console.log('[minio] addDrive END +%dms', performance.now() - t0);
 
+  console.log('[minio] createFileBrowser START +%dms', performance.now() - t0);
   const browser = factory.createFileBrowser(NAMESPACE, {
     driveName: drive.name,
     state: null,
     refreshInterval: 300000
   });
+  console.log('[minio] createFileBrowser END +%dms', performance.now() - t0);
 
-  const s3Browser = new S3FileBrowser(browser, drive, manager);
+  console.log(
+    '[minio] S3FileBrowser constructor START +%dms',
+    performance.now() - t0
+  );
+  const s3Browser = new S3FileBrowser(
+    browser,
+    drive,
+    manager,
+    app.serviceManager
+  );
+  console.log(
+    '[minio] S3FileBrowser constructor END +%dms',
+    performance.now() - t0
+  );
 
   s3Browser.title.icon = minioIcon;
   s3Browser.title.caption = t('sidebar.caption');
@@ -96,6 +118,7 @@ function activateFileBrowser(
   // Add the file browser widget to the application restorer.
   restorer.add(s3Browser, NAMESPACE);
   app.shell.add(s3Browser, 'left', { rank: 100 });
+  console.log('[minio] activate END +%dms', performance.now() - t0);
 
   // Helper to get the selected item path from the S3 browser
   const getSelectedS3Path = (): string | null => {
@@ -185,10 +208,7 @@ function activateFileBrowser(
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        t('dialog.copyToS3Path'),
-        ''
-      );
+      const dest = await showS3PathPickerDialog(t('dialog.copyToS3Path'), '');
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -214,10 +234,7 @@ function activateFileBrowser(
       if (!selected) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        t('dialog.moveToS3Path'),
-        ''
-      );
+      const dest = await showS3PathPickerDialog(t('dialog.moveToS3Path'), '');
       if (dest !== null) {
         const fileName = selected.split('/').pop() || selected;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -259,10 +276,7 @@ function activateFileBrowser(
             localPath
           );
           if (response.error) {
-            void showErrorMessage(
-              t('error.transfer'),
-              Error(response.message)
-            );
+            void showErrorMessage(t('error.transfer'), Error(response.message));
           }
         } catch (err: any) {
           void showErrorMessage(t('error.transfer'), err);
@@ -283,10 +297,7 @@ function activateFileBrowser(
       if (!localPath) {
         return;
       }
-      const dest = await showS3PathPickerDialog(
-        t('dialog.copyLocalToS3'),
-        ''
-      );
+      const dest = await showS3PathPickerDialog(t('dialog.copyLocalToS3'), '');
       if (dest !== null) {
         const fileName = localPath.split('/').pop() || localPath;
         const destPath = dest ? dest + '/' + fileName : fileName;
@@ -298,10 +309,7 @@ function activateFileBrowser(
             destPath
           );
           if (response.error) {
-            void showErrorMessage(
-              t('error.transfer'),
-              Error(response.message)
-            );
+            void showErrorMessage(t('error.transfer'), Error(response.message));
           }
         } catch (err: any) {
           void showErrorMessage(t('error.transfer'), err);
@@ -341,8 +349,7 @@ function activateFileBrowser(
               void showErrorMessage(
                 t('error.delete'),
                 Error(
-                  response.message ||
-                    `${t('error.deleteFailed')} ${itemPath}`
+                  response.message || `${t('error.deleteFailed')} ${itemPath}`
                 )
               );
             }

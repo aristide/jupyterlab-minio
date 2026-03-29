@@ -2,6 +2,38 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 2.2.0
+
+### Added
+
+- **Environment variable propagation**: MinIO credentials (`MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`) are now automatically propagated to all running kernels and terminals when credentials are set or reset.
+- **Shared JSON file** (`~/.jupyter/minio_env.json`): Single source of truth for MinIO env vars, loaded at server startup and read by kernel/terminal startup hooks.
+- **IPython startup hook**: Automatically sets MinIO env vars in Python kernels on startup.
+- **R startup hook** (`~/.Rprofile`): Automatically sets MinIO env vars in R kernels on startup, with `jsonlite` and regex fallback.
+- **Julia startup hook** (`~/.julia/config/startup.jl`): Automatically sets MinIO env vars in Julia kernels on startup.
+- **Shell startup hook** (`~/.bashrc`): Automatically exports MinIO env vars in terminal sessions.
+- **Generic kernel fallback**: Uses `KernelManager.update_env()` to patch all running kernel managers, ensuring any kernel language picks up updated env vars on restart.
+- **Auto-restart on credential change**: All running kernels are restarted and terminals are recreated when credentials are set or reset, with a user notification.
+- **`MINIO_DISABLE_RESET` environment variable**: Set to `true` to hide the credential reset button in the toolbar. Enabled (visible) by default.
+- **`GET /jupyterlab-minio/config` endpoint**: Returns runtime configuration flags including `disable_reset`.
+- **File and notebook creation in S3 buckets**: `S3Drive.newUntitled()` now creates files and notebooks directly in S3 instead of delegating to the local filesystem.
+
+### Changed
+
+- Server extension now loads persisted credentials from `~/.jupyter/minio_env.json` into `os.environ` before initializing config, so traitlets pick up saved values automatically.
+- `GET /auth` response simplified to `{"authenticated": boolean}` (credentials no longer returned).
+
+### Removed
+
+- Removed `jupyterlab-env-sync` dependency and all related integration code. Environment propagation is now handled natively within the extension.
+- Removed `EnvironmentManager` class from `utils.py` (replaced by `EnvFileManager` in `env_manager.py`).
+
+## 2.1.0
+
+### Fixed
+
+- Removed stray `os.environ["MYVAR"]` debug assignment in auth handler.
+
 ## 2.0.0
 
 ### Breaking Changes

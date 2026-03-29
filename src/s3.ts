@@ -140,6 +140,8 @@ function s3ToJupyterContents(s3Content: any): Contents.IModel {
 }
 
 export async function ls(path: string): Promise<Contents.IModel> {
+  const t0 = performance.now();
+  console.log('[minio] s3.ls("%s") START', path);
   const settings = ServerConnection.makeSettings(); // can be stored as class var
   const response = await (
     await ServerConnection.makeRequest(
@@ -148,14 +150,15 @@ export async function ls(path: string): Promise<Contents.IModel> {
       settings
     )
   ).json();
+  console.log('[minio] s3.ls("%s") END (%dms)', path, performance.now() - t0);
   const contents: Contents.IModel = {
     type: 'directory',
     path: path.trim(),
     name: '',
     format: 'json',
-    content: response.map((s3Content: any) => {
-      return s3ToJupyterContents(s3Content);
-    }),
+    content: Array.isArray(response)
+      ? response.map((s3Content: any) => s3ToJupyterContents(s3Content))
+      : [],
     created: '',
     writable: true,
     last_modified: '',
@@ -167,7 +170,7 @@ export async function ls(path: string): Promise<Contents.IModel> {
 export async function read(path: string): Promise<Contents.IModel> {
   // pass
   const settings = ServerConnection.makeSettings(); // can be stored as class var
-  const response = (
+  const response = await (
     await ServerConnection.makeRequest(
       URLExt.join(settings.baseUrl, 'jupyterlab-minio/files', path),
       { method: 'GET' },
@@ -221,6 +224,18 @@ export async function transferFile(
           dest_path: destPath
         })
       },
+      settings
+    )
+  ).json();
+  return response;
+}
+
+export async function getConfig(): Promise<{ disable_reset: boolean }> {
+  const settings = ServerConnection.makeSettings();
+  const response = await (
+    await ServerConnection.makeRequest(
+      URLExt.join(settings.baseUrl, 'jupyterlab-minio/config'),
+      { method: 'GET' },
       settings
     )
   ).json();

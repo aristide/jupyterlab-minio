@@ -78,6 +78,12 @@ export class S3Drive implements Contents.IDrive {
     path: string,
     options?: Contents.IFetchOptions
   ): Promise<Contents.IModel> {
+    const t0 = performance.now();
+    console.log(
+      '[minio] S3Drive.get("%s", type=%s) START',
+      path,
+      options?.type
+    );
     if (options && (options.type === 'file' || options.type === 'notebook')) {
       const s3Contents = await s3.read(path);
       const types = this._registry.getFileTypesForPath(path);
@@ -114,9 +120,20 @@ export class S3Drive implements Contents.IDrive {
         mimetype
       };
 
+      console.log(
+        '[minio] S3Drive.get("%s") END (%dms) — file',
+        path,
+        performance.now() - t0
+      );
       return contents;
     } else {
-      return await s3.ls(path);
+      const result = await s3.ls(path);
+      console.log(
+        '[minio] S3Drive.get("%s") END (%dms) — ls',
+        path,
+        performance.now() - t0
+      );
+      return result;
     }
   }
 
@@ -150,65 +167,110 @@ export class S3Drive implements Contents.IDrive {
   async newUntitled(
     options: Contents.ICreateOptions = {}
   ): Promise<Contents.IModel> {
-    let s3contents;
-    const basename = 'untitled';
-    let filename = basename;
-    const existingFiles = await s3.ls(options.path as string);
+    const dirPath = options.path || '';
+    console.log(
+      '[minio] S3Drive.newUntitled(type=%s, path=%s)',
+      options.type,
+      dirPath
+    );
+
+    const existingFiles = await s3.ls(dirPath);
     const existingFilenames = existingFiles.content.map(
       (content: Contents.IModel) => content.name
     );
+
+    if (options.type === 'file' || options.type === 'notebook') {
+      const ext =
+        options.type === 'notebook' ? '.ipynb' : options.ext || '.txt';
+      const basename = 'untitled';
+      let filename = basename + ext;
+      let uniqueSuffix = 0;
+      while (existingFilenames.includes(filename)) {
+        uniqueSuffix++;
+        filename = basename + uniqueSuffix + ext;
+      }
+
+      const filePath = dirPath ? dirPath + '/' + filename : filename;
+      const defaultContent =
+        options.type === 'notebook'
+          ? JSON.stringify({
+              cells: [],
+              metadata: { kernelspec: {} },
+              nbformat: 4,
+              nbformat_minor: 5
+            })
+          : '';
+      await s3.writeFile(filePath, defaultContent);
+
+      const types = this._registry.getFileTypesForPath(filePath);
+      const fileType =
+        types.length === 0
+          ? (this._registry.getFileType('text') ?? undefined)
+          : types[0];
+      const contents: Contents.IModel = {
+        type: options.type,
+        path: filePath,
+        name: filename,
+        format: fileType.fileFormat,
+        content: defaultContent,
+        created: '',
+        writable: true,
+        last_modified: '',
+        mimetype: fileType.mimeTypes[0]
+      };
+
+      this._fileChanged.emit({
+        type: 'new',
+        oldValue: null,
+        newValue: contents
+      });
+      return contents;
+    }
+
+    if (options.type !== 'directory') {
+      throw new Error(`Unexpected type: ${options.type}`);
+    }
+
+    const basename = 'untitled';
+    let filename = basename;
     let uniqueSuffix = 0;
     while (existingFilenames.includes(filename)) {
       uniqueSuffix++;
       filename = basename + uniqueSuffix;
     }
-    switch (options.type) {
-      case 'file':
-        s3contents = await s3.writeFile(options.path + '/' + filename, '');
-        break;
-      case 'directory':
-        if (options.path === '') {
-          s3contents = await s3.createBucket(filename);
-          const bucketContents: Contents.IModel = {
-            type: 'directory',
-            path: '',
-            name: filename,
-            format: 'json',
-            content: [],
-            created: '',
-            writable: true,
-            last_modified: '',
-            mimetype: ''
-          };
-          this._fileChanged.emit({
-            type: 'new',
-            oldValue: null,
-            newValue: bucketContents
-          });
-          return bucketContents;
-        }
-        s3contents = await s3.createDirectory(options.path + '/' + filename);
-        break;
-      default:
-        throw new Error(`Unexpected type: ${options.type}`);
+
+    if (dirPath === '') {
+      await s3.createBucket(filename);
+      const bucketContents: Contents.IModel = {
+        type: 'directory',
+        path: '',
+        name: filename,
+        format: 'json',
+        content: [],
+        created: '',
+        writable: true,
+        last_modified: '',
+        mimetype: ''
+      };
+      this._fileChanged.emit({
+        type: 'new',
+        oldValue: null,
+        newValue: bucketContents
+      });
+      return bucketContents;
     }
-    const types = this._registry.getFileTypesForPath(s3contents.path);
-    const fileType =
-      types.length === 0
-        ? (this._registry.getFileType('text') ?? undefined)
-        : types[0];
-    const mimetype = fileType.mimeTypes[0];
-    const format = fileType.fileFormat;
+
+    await s3.createDirectory(dirPath + '/' + filename);
     const contents: Contents.IModel = {
-      type: options.type,
-      path: options.path as string,
+      type: 'directory',
+      path: dirPath,
       name: filename,
-      format,
-      content: '',
+      format: 'json',
+      content: [],
       created: '',
       writable: true,
       last_modified: '',
-      mimetype
+      mimetype: ''
     };
 
     this._fileChanged.emit({
